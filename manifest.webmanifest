@@ -1,0 +1,23 @@
+{
+  "name": "DreamWeaver · 幻梦织者",
+  "short_name": "幻梦织者",
+  "description": "AI 长篇小说创作台：世界观设定库、SillyTavern 世界书、角色卡与叙事地位、人物关系网、逐章出文与伏笔追踪。全部数据存本地，离线可用。",
+  "id": "/dreamweaver/",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "browser"],
+  "orientation": "any",
+  "background_color": "#f4f8ff",
+  "theme_color": "#7fa9e8",
+  "lang": "zh-CN",
+  "dir": "ltr",
+  "categories": ["productivity", "books", "entertainment"],
+  "prefer_related_applications": false,
+  "icons": [
+    { "src": "./icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "./icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "./icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

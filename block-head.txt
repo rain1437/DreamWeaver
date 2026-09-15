@@ -1,0 +1,73 @@
+<script>
+/* ============================================================================
+   设备自动识别（电脑 / 平板 / 手机）—— 放在 <head> 里最先执行，
+   给 <html> 打上 data-device / data-orient / data-touch 标记，
+   这样手机竖屏从第一帧起就用手机布局，不会先渲染桌面版再跳变。
+   用户也可以在「数据保险 → 界面适配」里强制切换。
+   ========================================================================== */
+(function(){
+  var KEY='ai-novel-ui-v1';
+  var root=document.documentElement;
+
+  function getPref(){
+    try{
+      var r=localStorage.getItem(KEY);
+      if(r){ var d=JSON.parse(r); if(d&&(d.mode==='auto'||d.mode==='phone'||d.mode==='desktop')) return d.mode; }
+    }catch(e){}
+    return 'auto';
+  }
+  function env(){
+    var u=navigator.userAgent||'';
+    var touch=(navigator.maxTouchPoints||0)>0 || ('ontouchstart' in window);
+    var ipad=/Macintosh/.test(u) && (navigator.maxTouchPoints||0)>1;
+    return {
+      ua:u, touch:touch,
+      phone:/iPhone|iPod|Android.*Mobile|Mobile.*Android|Windows Phone|IEMobile|BlackBerry|Opera Mini|HarmonyOS.*Mobile/i.test(u),
+      tablet:/iPad|Android(?!.*Mobile)|Tablet|PlayBook|Silk/i.test(u) || ipad,
+      ios:/iPad|iPhone|iPod/.test(u) || ipad
+    };
+  }
+  function detect(){
+    var p=getPref(), e=env();
+    var w=Math.min(window.innerWidth||1e4, (window.screen&&screen.width)||1e4);
+    if(p!=='auto') return p;                    // 用户手动指定优先
+    if(e.phone) return 'phone';
+    if(e.tablet) return 'tablet';
+    if(e.touch && w<=820 && /Android|iPhone|iPad|iOS|Harmony/i.test(e.ua)) return 'phone';
+    return 'desktop';
+  }
+  function setVH(){
+    root.style.setProperty('--vh', (window.innerHeight*0.01)+'px');
+  }
+  function apply(){
+    var e=env(), dev=detect();
+    root.dataset.device=dev;
+    root.dataset.orient=(window.innerHeight>=window.innerWidth)?'portrait':'landscape';
+    root.dataset.touch=(e.touch && /Android|iPhone|iPad|iPod|Harmony/i.test(e.ua))?'1':'0';
+    root.dataset.viewpref=getPref();
+    setVH();
+    try{ window.dispatchEvent(new CustomEvent('devicechange',{detail:{device:dev,pref:getPref()}})); }catch(err){}
+  }
+  var raf=0;
+  function schedule(){ cancelAnimationFrame(raf); raf=requestAnimationFrame(apply); }
+
+  window.Device={
+    apply:apply,
+    detect:detect,
+    get pref(){ return getPref(); },
+    get device(){ return root.dataset.device||'desktop'; },
+    get orient(){ return root.dataset.orient||'portrait'; },
+    get isPhone(){ return this.device==='phone'; },
+    get isTouch(){ return env().touch; },
+    setPref:function(m){
+      m=(m==='phone'||m==='desktop')?m:'auto';
+      try{ localStorage.setItem(KEY, JSON.stringify({mode:m})); }catch(e){}
+      apply();
+    }
+  };
+  apply();
+  window.addEventListener('resize', schedule, {passive:true});
+  window.addEventListener('orientationchange', function(){ setTimeout(apply,120); });
+  if(window.visualViewport) window.visualViewport.addEventListener('resize', setVH, {passive:true});
+})();
+</script>

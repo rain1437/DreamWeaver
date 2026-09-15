@@ -1,0 +1,100 @@
+/* =========================================================
+   角色卡：卡片列表 + 人物档案（细分编辑）
+   ========================================================= */
+.charlist.detail{grid-template-columns:1fr}
+.chcard2{background:rgba(255,255,255,.86);border:1px solid var(--line-soft);border-radius:var(--radius);
+  padding:13px 14px;box-shadow:var(--shadow-xs);transition:.16s;cursor:pointer}
+.chcard2:hover{border-color:var(--accent);box-shadow:var(--shadow-sm);transform:translateY(-1px)}
+.chcard2.off{opacity:.55}
+.chcard2 .ch-name{font-weight:700;font-size:15.5px;line-height:1.4;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chcard2 .ch-alias{font-size:12px;color:var(--muted);margin-top:2px;line-height:1.4;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chcard2 .gauge{pointer-events:none}
+.ch-sum{font-size:12.5px;color:var(--muted);line-height:1.7;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+  min-height:34px;overflow-wrap:anywhere}
+.ch-foot{display:flex;align-items:center;gap:8px;margin-top:9px;padding-top:8px;
+  border-top:1px dashed var(--line-soft)}
+/* 档案详情 */
+.chfield{margin-bottom:12px}
+.chfield-head{display:flex;align-items:center;gap:6px;margin-bottom:5px;flex-wrap:wrap}
+.chfield-head .lb{font-size:12.5px;font-weight:600;color:var(--ink);letter-spacing:.2px}
+.chfield textarea{margin-bottom:0;min-height:56px}
+.chcard2 .avatar img,.chfield+.toolbar .avatar img{width:100%;height:100%;object-fit:cover}
+/* 卡片网格：窄屏单列 */
+@media (max-width:720px){
+  .charlist{grid-template-columns:1fr}
+  .chcard2{cursor:default}
+  .chcard2:hover{transform:none}
+  .chfield-head .btn.xs{flex:1 1 auto;min-height:34px}
+}
+
+/* =========================================================
+   角色叙事地位（9 级：第一主角 → 传说人物）
+   ========================================================= */
+.tierbar{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:12px}
+.tchip{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.72);
+  border:1px solid var(--line-soft);border-radius:999px;padding:6px 13px;font-size:13px;
+  color:var(--muted);transition:.16s;cursor:pointer}
+.tchip:hover{border-color:var(--accent)}
+.tchip.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.tchip .n{font-size:11.5px;opacity:.75}
+.tierhead{display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px;
+  margin:6px 0 2px;padding-bottom:6px;border-bottom:1px solid var(--line-soft)}
+.tierhead .n{font-size:11.5px;font-weight:500;color:var(--muted);
+  background:var(--sunken);border-radius:999px;padding:1px 8px}
+.tierhead .hint{font-weight:400;font-size:11.5px;line-height:1.6;flex:1 1 100%;min-width:0}
+.tierbadge{border:1px solid var(--line-soft);background:var(--sunken);color:var(--muted);
+  cursor:pointer;white-space:nowrap}
+.tierbadge.lead1{background:rgba(240,118,60,.16);border-color:rgba(240,118,60,.55);color:#a8480f;font-weight:700}
+.tierbadge.dual{background:rgba(139,92,246,.14);border-color:rgba(139,92,246,.5);color:#5b31c4;font-weight:700}
+.tierbadge.lead2{background:rgba(47,127,214,.14);border-color:rgba(47,127,214,.5);color:#1c5ea6;font-weight:600}
+.tierbadge.core{background:rgba(20,150,110,.14);border-color:rgba(20,150,110,.45);color:#0a6b4f;font-weight:600}
+.tierbadge.support{background:rgba(14,148,136,.12);border-color:rgba(14,148,136,.4);color:#0b6f66}
+.tierbadge.extra{background:rgba(91,114,133,.12);border-color:rgba(91,114,133,.35);color:#43586b}
+.tierbadge.npc{background:var(--sunken);color:var(--muted)}
+.tierbadge.bg{background:transparent;border-style:dashed;color:var(--muted)}
+.tierbadge.legend{background:rgba(199,154,46,.14);border-color:rgba(199,154,46,.5);color:#8a6a12;font-weight:600}
+/* 用户自定义档位：统一一个标志色（具体色值不写死到 id 上） */
+.tierbadge.custom-t{background:rgba(124,58,237,.12);border-color:rgba(124,58,237,.45);color:#5b21b6;font-weight:600}
+/* 定位选择弹窗里的档位卡 */
+.tieropt{display:flex;gap:9px;align-items:flex-start;padding:10px 12px;margin-top:8px;
+  border:1px solid var(--line-soft);border-radius:var(--radius-sm);background:#fff}
+.tieropt.on{border-color:var(--accent);box-shadow:0 0 0 2px rgba(56,150,220,.16)}
+.tieropt .to-n{font-size:12.5px;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.tieropt .to-w{font-size:11px;font-weight:500;color:var(--muted);background:var(--sunken);
+  border-radius:999px;padding:1px 7px}
+.tieropt.on .to-w{background:rgba(56,150,220,.14);color:#1c5ea6}
+@media (max-width:720px){
+  .tierbadge{min-height:30px}
+  .tierhead{flex-wrap:wrap}
+  .tieropt{padding:11px 12px}
+}
+
+/* =========================================================
+   人物关系板
+   ========================================================= */
+.charlist.boardview{grid-template-columns:1fr}
+.relstat{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.relgraph{background:rgba(255,255,255,.72);border:1px solid var(--line-soft);
+  border-radius:var(--radius);padding:10px;overflow:hidden;margin-bottom:14px}
+.relgraph svg{width:100%;height:auto;display:block;max-height:70vh}
+.relgraph .nd{cursor:pointer}
+.relgraph .elab{transition:.16s}
+.relgraph .elab:hover circle{stroke-width:3}
+.rellist{margin-top:2px}
+.relrow{background:#fff;border:1px solid var(--line-soft);border-radius:var(--radius-sm);
+  padding:11px 12px;margin-bottom:8px;transition:.16s}
+.relrow.sel{border-color:var(--accent);box-shadow:0 0 0 2px rgba(56,150,220,.16)}
+.relrow .rr-top{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:8px}
+.relrow .rr-who{font-weight:600;font-size:13.5px}
+.relrow .rr-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.relrow input,.relrow select,.relrow textarea{margin-bottom:0;font-size:13px}
+.relrow label{margin-top:9px}
+@media (max-width:720px){
+  .relrow .rr-grid{grid-template-columns:1fr}
+  .relgraph svg{max-height:none}
+  .relrow select,.relrow input{min-height:40px}
+  .tchip{min-height:38px}
+}

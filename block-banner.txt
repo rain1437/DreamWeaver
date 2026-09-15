@@ -1,0 +1,14 @@
+<input type="file" id="fileAllBackup" accept=".json" hidden>
+
+<!-- 数据保险条：手机端浏览器可能清理本地数据，这里常驻提醒 + 一键备份 -->
+<div class="safebar" id="safeBanner" hidden>
+  <span class="sb-ic">🛡</span>
+  <span class="sb-tx" id="safeBannerText"></span>
+  <div class="sb-acts">
+    <button class="btn xs primary" id="safeExportAll">立即导出备份</button>
+    <button class="btn xs" id="safeOpen">数据保险</button>
+    <button class="btn xs ghost" id="safeLater">稍后</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>

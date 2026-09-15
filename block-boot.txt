@@ -1,0 +1,62 @@
+/* =========================================================
+   启动：先体检存储 + 必要时从 IndexedDB 镜像把数据找回来，再进书架
+   ========================================================= */
+(async function boot(){
+  dwBoot();                     /* DreamWeaver：品牌 / 外观 / 本地键迁移 / 状态浮窗 */
+  layBoot();                    /* UI 重编排：折叠 / 收纳 / 空状态 / 三态（纯表现层） */
+  probeStorage();
+  await IDB.open();
+  initLoreUI();                 /* 世界观设定库：绑定事件 + 首次渲染 */
+  chBindTop();                  /* 角色卡：导入 / 新建入口 + 主角称呼 */
+  let restored=0;
+  try{ restored=await safetyRestore(); }catch(e){ console.warn('mirror restore failed',e); }
+  if(restored){ try{ dwMigrateKeys(); }catch(e){} }   /* 镜像恢复回来的旧键，同步到新前缀 */
+
+  loadLib();
+  /* 旧版本的单项目数据 → 自动放进书架，不丢东西 */
+  if(!lib.items.length){
+    try{
+      const legacy=localStorage.getItem(LS_KEY);
+      if(legacy){
+        const d=JSON.parse(legacy);
+        const id=createBook((d.meta&&d.meta.title)||'我的第一本书', (d.meta&&d.meta.genre)||'玄幻修真');
+        try{ localStorage.setItem(LS_BOOK+id, legacy); }catch(e){ console.warn(e); }
+        const it=libItem(id);
+        it.words=wordsOf(d); it.chapters=(d.outline||[]).length; it.done=doneOf(d);
+        it.logline=(d.meta&&d.meta.logline)||'';
+        saveLib();
+        setTimeout(()=>toast('已把你的旧项目放进书架'),600);
+      }
+    }catch(e){ console.warn('migrate failed',e); }
+  }
+  if(lib.active && libItem(lib.active)) openBook(lib.active);
+  else if(lib.items.length) openBook(lib.items[0].id);
+  else showShelf();
+
+  if(restored) setTimeout(()=>toast('检测到本地数据丢失：已从 IndexedDB 镜像自动复原（' + restored + ' 项）。建议顺手导出一份备份文件。'),800);
+  setTimeout(updateSafeBanner,1200);
+  setInterval(updateSafeBanner,300000);
+
+  /* ---- 切后台 / 关页面：立刻落盘，不等防抖计时器 ---- */
+  document.addEventListener('visibilitychange',()=>{ if(document.hidden) safetyFlush('hidden'); });
+  window.addEventListener('pagehide',()=>safetyFlush('pagehide'));
+  window.addEventListener('beforeunload',()=>safetyFlush('beforeunload'));
+
+  /* ---- 数据保险入口 + 保险条按钮 ---- */
+  ['#btnSafety','#btnSafetyShelf'].forEach(sel=>{
+    const b=$(sel); if(b) b.onclick=()=>openSafety();
+  });
+  $('#safeOpen').onclick=()=>openSafety();
+  $('#safeExportAll').onclick=()=>exportAllBooks();
+  $('#safeLater').onclick=()=>{ safety.snooze=Date.now()+86400000; saveSafety(); updateSafeBanner(); };
+  $('#fileAllBackup').onchange=async e=>{
+    const f=e.target.files[0]; e.target.value='';
+    if(f) await importAllFile(f);
+  };
+  /* 任何一次「导出」都算作已备份，提醒条会自动消失 */
+  const _dl=download;
+  download=function(name,text,mime){
+    _dl(name,text,mime);
+    try{ safety.lastBackup=Date.now(); safety.snooze=0; saveSafety(); updateSafeBanner(); }catch(e){}
+  };
+})();

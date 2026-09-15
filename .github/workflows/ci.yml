@@ -1,0 +1,39 @@
+name: CI · 构建与测试
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: 构建 + 全套测试
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 准备 Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 构建单文件应用（内含 10 项结构自检）
+        run: node build.js
+
+      - name: 生成 App 图标
+        run: node tools/make-icons.js
+
+      - name: 运行全套测试
+        run: node tools/run-tests.js
+
+      - name: 组装发布目录
+        run: node tools/build-site.js
+
+      - name: 上传构建产物（可在 Actions 页面下载）
+        uses: actions/upload-artifact@v4
+        with:
+          name: dreamweaver-app
+          path: dist/
+          retention-days: 30

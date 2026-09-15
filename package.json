@@ -1,0 +1,27 @@
+{
+  "name": "dreamweaver-novel-studio",
+  "version": "8.0.3",
+  "private": true,
+  "description": "DreamWeaver · 幻梦织者 —— AI 长篇小说创作台（单文件 Web 应用，纯浏览器本地运行）",
+  "keywords": [
+    "ai",
+    "novel",
+    "writing",
+    "sillytavern",
+    "worldbook",
+    "pwa",
+    "single-file"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "node build.js",
+    "icons": "node tools/make-icons.js",
+    "site": "node tools/build-site.js",
+    "test": "node tools/run-tests.js",
+    "test:quick": "node verify.js && node test-layout.js && node test-cast.js && node test-char.js",
+    "start": "node tools/serve.js"
+  }
+}

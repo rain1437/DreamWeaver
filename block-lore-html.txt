@@ -1,0 +1,27 @@
+  <!-- ================= 世界观设定库（四大块） ================= -->
+  <section class="panel" id="tab-lore">
+    <div class="card" style="margin-bottom:14px">
+      <div class="toolbar">
+        <label class="switch" style="margin:0"><input type="checkbox" id="loreOn" checked> 启用世界观设定库（固定上下文 · 随章节注入）</label>
+        <div class="spacer"></div>
+        <button class="btn sm" id="btnLoreImport">⇧ 导入设定库</button>
+        <button class="btn sm" id="btnLoreExport">⇩ 导出设定库</button>
+        <input type="file" id="fileLore" accept=".json,application/json" style="display:none">
+        <input type="file" id="fileWB" accept=".json,.txt" multiple style="display:none">
+      </div>
+      <div class="hint" style="margin-top:8px">
+        这里录入的内容会作为<b>固定上下文</b>，每次生成章节时拼进 System Prompt，保证设定统一不崩。<br>
+        四大模块相互独立、按需填写（写现代小说可以直接关掉「力量体系」）。每条设定单独保存、单独让 AI 扩写或润色，互不影响。<br>
+        <b>世界书已完全并入这里</b>：在「🌍 世界观大类」里可以导入 SillyTavern 世界书，触发关键词、常驻、概率、分组、递归等设置全部保留；
+        力量体系 / 历史年表 / 全局约束属于<b>固定上下文</b>（每章必注入）。
+      </div>
+    </div>
+    <div class="ltabs">
+      <button class="ltab active" data-ltab="world">🌍 世界观大类<span class="n" id="nLoreW"></span></button>
+      <button class="ltab" data-ltab="power">⚡ 力量体系<span class="n" id="nLoreP"></span></button>
+      <button class="ltab" data-ltab="history">📜 历史年表<span class="n" id="nLoreH"></span></button>
+      <button class="ltab" data-ltab="global">🔒 全局约束<span class="n" id="nLoreG"></span></button>
+    </div>
+    <div id="loreBody"></div>
+  </section>
+

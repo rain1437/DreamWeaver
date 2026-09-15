@@ -1,0 +1,4128 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="color-scheme" content="light" />
+<meta name="description" content="墨砚 · AI 小说创作台：世界书设定注入、角色卡、逐章出文与目录管理" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230b6f96'/%3E%3Cpath d='M4 21c4-4 7-4 11 0s7 4 13 0v5H4z' fill='%237fd2ef'/%3E%3Cpath d='M4 15c4-4 7-4 11 0s7 4 13 0' stroke='%23ffce85' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+<title>墨砚 · AI 小说创作台</title>
+<style>
+/* ============================================================================
+   墨砚 · AI 小说创作台
+   主题：晴空与海洋（Sky & Ocean）
+   —— 全文用 CSS 变量驱动，布局按「桌面 / 平板 / 手机」三档自适应
+   ========================================================================== */
+:root{
+  /* 天空层 */
+  --sky-0:#f7fcff; --sky-1:#eaf7ff; --sky-2:#d9f0fe; --sky-3:#c6e8fb;
+  /* 海洋层 */
+  --sea-0:#06364a; --sea-1:#0b5f7d; --sea-2:#0e88b0; --sea-3:#26a9cd;
+  --wave:#7fd2ef; --foam:#ffffff;
+  /* 阳光 / 晚霞 */
+  --sun:#f09b34; --sun-2:#ffce85; --coral:#ef6f52;
+  /* 文本与语义 */
+  --fg:#08293b; --fg-soft:#1d465c; --muted:#4e7386; --muted-2:#7696a8;
+  --line:#c3e0f0; --line-soft:#dcf0fa;
+  --ok:#0e8161; --warn:#a15c04; --bad:#c23c3c;
+  --accent:#0b7ba1; --accent-2:#2fb4d8;
+  /* 面层 */
+  --card:rgba(255,255,255,.8); --card-solid:#ffffff; --sunken:rgba(233,246,253,.72);
+  --radius:16px; --radius-sm:11px; --radius-xs:8px;
+  --shadow-xs:0 1px 2px rgba(10,70,98,.06);
+  --shadow-sm:0 4px 14px rgba(10,70,98,.08);
+  --shadow:0 12px 32px rgba(10,70,98,.12);
+  --shadow-lg:0 24px 56px rgba(10,70,98,.18);
+  --ring:0 0 0 3px rgba(47,180,216,.22);
+}
+
+/* ---------- 基底 ---------- */
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+html,body{min-height:100%}
+body{
+  margin:0;color:var(--fg);
+  font:15px/1.7 "PingFang SC","HarmonyOS Sans SC","Segoe UI",-apple-system,"Microsoft YaHei",sans-serif;
+  background:var(--sky-1);
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+a{color:var(--accent)}
+::selection{background:rgba(47,180,216,.25)}
+::placeholder{color:var(--muted-2)}
+
+/* ---------- 背景画：晴空 · 阳光 · 海浪 ---------- */
+.art{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden}
+.art .sky{position:absolute;inset:0;background:
+  radial-gradient(1150px 620px at 12% -12%, rgba(255,213,150,.72), transparent 62%),
+  radial-gradient(980px 560px at 88% -16%, rgba(152,226,255,.78), transparent 60%),
+  linear-gradient(180deg,#fbfeff 0%, #eef9ff 30%, #dcf1fe 58%, #cbe9fb 100%);}
+.art .sun{position:absolute;left:10%;top:-140px;width:360px;height:360px;border-radius:50%;
+  background:radial-gradient(circle, rgba(255,201,124,.95) 0%, rgba(255,201,124,.35) 42%, rgba(255,201,124,0) 70%);
+  filter:blur(4px);animation:breathe 12s ease-in-out infinite}
+@keyframes breathe{50%{transform:scale(1.06);opacity:.9}}
+.art .wave{position:absolute;left:-3%;right:-3%;bottom:-1px;background-repeat:no-repeat;background-size:100% 100%}
+.art .w1{height:340px;opacity:.5;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 340' preserveAspectRatio='none'%3E%3Cpath fill='%23a6dcf4' d='M0,150 C210,240 390,70 640,140 C860,202 1080,86 1440,168 L1440,340 L0,340 Z'/%3E%3C/svg%3E")}
+.art .w2{height:240px;opacity:.5;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 240' preserveAspectRatio='none'%3E%3Cpath fill='%2377c9e9' d='M0,120 C260,196 420,52 700,112 C980,172 1180,70 1440,132 L1440,240 L0,240 Z'/%3E%3C/svg%3E")}
+.art .w3{height:150px;opacity:.42;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 150' preserveAspectRatio='none'%3E%3Cpath fill='%2343b3da' d='M0,74 C240,132 460,30 720,74 C980,118 1220,40 1440,86 L1440,150 L0,150 Z'/%3E%3C/svg%3E")}
+@media (max-width:720px){ .art .sun{width:230px;height:230px;left:-40px;top:-90px} .art .w1{display:none} .art .w2{height:165px} .art .w3{height:105px} }
+@media (prefers-reduced-motion:reduce){ .art .sun{animation:none} }
+
+/* ---------- 版心 ---------- */
+.app{max-width:1400px;margin:0 auto;padding:0 22px 84px}
+.shelf{max-width:1400px;margin:0 auto;padding:0 22px 84px}
+@media (max-width:720px){ .app,.shelf{padding:0 13px 72px} }
+
+/* ---------- 顶部栏（书架 / 编辑器共用） ---------- */
+.stickytop{
+  position:sticky;top:0;z-index:40;padding:12px 0 0;margin-bottom:20px;
+  background:linear-gradient(180deg, rgba(250,253,255,.94) 0%, rgba(246,252,255,.82) 62%, rgba(246,252,255,0) 100%);
+  backdrop-filter:blur(16px) saturate(140%);-webkit-backdrop-filter:blur(16px) saturate(140%);
+}
+.shelf .stickytop{padding-bottom:10px}
+.topbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.logo{
+  width:44px;height:44px;border-radius:14px;display:grid;place-items:center;flex:0 0 auto;
+  font-weight:800;font-size:19px;color:#fff;letter-spacing:.5px;
+  background:linear-gradient(150deg,#2fb4d8 0%, #0e88b0 45%, #0b5f7d 100%);
+  box-shadow:0 8px 20px rgba(11,95,125,.32), inset 0 1px 0 rgba(255,255,255,.45);
+}
+.title-block{min-width:0}
+.topbar h1{margin:0;font-size:19px;font-weight:700;letter-spacing:.3px;color:var(--sea-0);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:52vw}
+.topbar .sub{color:var(--muted);font-size:12.5px;margin-top:1px}
+.spacer{flex:1;min-width:0}
+.top-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.status{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:var(--muted);
+  padding:5px 11px;border-radius:20px;background:var(--card);border:1px solid var(--line-soft);cursor:pointer;white-space:nowrap}
+.status:hover{border-color:var(--accent-2);color:var(--fg-soft)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 3px rgba(14,129,97,.16)}
+.dot.busy{background:var(--warn);box-shadow:0 0 0 3px rgba(185,106,5,.16);animation:pulse 1s infinite}
+.dot.bad{background:var(--bad);box-shadow:0 0 0 3px rgba(207,68,68,.16)}
+@keyframes pulse{50%{opacity:.32}}
+#btnMenu{display:none}
+@media (max-width:900px){
+  #btnMenu{display:grid}
+  #statusText{max-width:104px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .status{padding:5px 10px}
+  .top-actions{display:none;width:100%;order:5;gap:7px;
+    background:var(--card-solid);border:1px solid var(--line-soft);border-radius:14px;padding:10px;box-shadow:var(--shadow)}
+  .top-actions.show{display:flex}
+  .topbar h1{max-width:56vw;font-size:17px}
+  .logo{width:38px;height:38px;border-radius:12px;font-size:16px}
+  .topbar .sub{display:none}
+}
+
+/* ---------- 页签 ---------- */
+.tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:10px;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{
+  flex:0 0 auto;border:1px solid transparent;background:rgba(255,255,255,.6);color:var(--muted);
+  border-radius:999px;padding:8px 16px;font-size:14px;transition:.16s;white-space:nowrap;
+}
+.tab:hover{color:var(--fg-soft);background:#fff}
+.tab.active{
+  color:#fff;font-weight:600;border-color:transparent;
+  background:linear-gradient(135deg,#2fb4d8,#0b6f96);
+  box-shadow:0 6px 16px rgba(11,111,150,.28);
+}
+.tab .n{font-size:11px;opacity:.8;margin-left:4px}
+.panel{display:none;animation:fade .25s ease}
+.panel.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* ---------- 卡片与栅格 ---------- */
+.card{
+  background:var(--card);border:1px solid var(--line-soft);border-radius:var(--radius);
+  padding:18px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);box-shadow:var(--shadow-sm);
+}
+.card.sunken{background:var(--sunken);box-shadow:none}
+.card h3{margin:0 0 12px;font-size:14px;color:var(--sea-1);font-weight:700;letter-spacing:.4px;
+  display:flex;align-items:center;gap:8px}
+.card h3:before{content:'';width:4px;height:15px;border-radius:3px;flex:0 0 auto;
+  background:linear-gradient(180deg,var(--accent-2),var(--sea-2))}
+.card h3 .tip{font-weight:400;font-size:12px;color:var(--muted);display:inline-flex;align-items:center}
+.grid{display:grid;grid-template-columns:1.25fr 1fr;gap:16px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:980px){ .grid,.grid2{grid-template-columns:1fr} }
+
+/* ---------- 表单 ---------- */
+label{display:block;font-size:12.5px;color:var(--muted);margin:13px 0 5px;font-weight:500}
+input[type=text],input[type=password],input[type=number],input[type=search],select,textarea{
+  width:100%;background:rgba(255,255,255,.9);border:1px solid var(--line);border-radius:var(--radius-sm);
+  padding:9px 12px;outline:none;transition:.15s;color:var(--fg);box-shadow:var(--shadow-xs);
+}
+input:hover,select:hover,textarea:hover{border-color:var(--accent-2)}
+input:focus,textarea:focus,select:focus{border-color:var(--accent);box-shadow:var(--ring)}
+textarea{resize:vertical;min-height:76px;line-height:1.7;font-family:inherit}
+select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath fill='%235c8095' d='M6 8 0 0h12z'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 11px center;padding-right:30px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+@media (max-width:720px){ .row,.row3{grid-template-columns:1fr} }
+.hint{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.7}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.switch{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);cursor:pointer;user-select:none;margin:0}
+.switch input{accent-color:var(--accent);width:16px;height:16px;flex:0 0 auto}
+
+/* ---------- 按钮 ---------- */
+.btn{
+  background:rgba(255,255,255,.9);border:1px solid var(--line);border-radius:var(--radius-sm);
+  padding:8px 15px;font-size:14px;color:var(--fg-soft);transition:.16s;box-shadow:var(--shadow-xs);
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;
+}
+.btn:hover{border-color:var(--accent-2);background:#fff;color:var(--sea-0);box-shadow:var(--shadow-sm)}
+.btn.primary{background:linear-gradient(135deg,#17a5cd,#0b6f96);border-color:#0b6f96;color:#fff;font-weight:600}
+.btn.primary:hover{background:linear-gradient(135deg,#25b7de,#0d81ab);color:#fff;box-shadow:0 10px 24px rgba(11,111,150,.3)}
+.btn.ghost{background:transparent;border-color:transparent;box-shadow:none}
+.btn.ghost:hover{background:rgba(255,255,255,.7);border-color:var(--line)}
+.btn.danger{color:var(--bad)}
+.btn.danger:hover{border-color:var(--bad);color:var(--bad);background:#fff}
+.btn:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
+.btn.sm{padding:5px 11px;font-size:12.5px;border-radius:9px}
+.btn.xs{padding:3px 9px;font-size:12px;border-radius:8px}
+.iconbtn{width:34px;height:34px;border-radius:11px;background:rgba(255,255,255,.9);border:1px solid var(--line);
+  color:var(--sea-1);font-size:15px;display:grid;place-items:center;transition:.16s;flex:0 0 auto}
+.iconbtn:hover{border-color:var(--accent-2);color:var(--accent);background:#fff;box-shadow:var(--shadow-sm)}
+
+/* ---------- 徽标与状态 ---------- */
+.badge{display:inline-block;font-size:11px;padding:2px 9px;border-radius:999px;background:var(--sunken);
+  color:var(--muted);border:1px solid var(--line-soft);white-space:nowrap}
+.badge.on{background:rgba(47,180,216,.14);color:#0a6f92;border-color:rgba(47,180,216,.4)}
+.badge.warn{background:rgba(240,155,52,.15);color:#8f5202;border-color:rgba(240,155,52,.4)}
+.badge.ok{background:rgba(14,129,97,.13);color:#0a6549;border-color:rgba(14,129,97,.35)}
+
+/* ---------- 世界书 / 通用条目 ---------- */
+.item{background:rgba(255,255,255,.85);border:1px solid var(--line-soft);border-radius:var(--radius-sm);
+  padding:11px 13px;margin-bottom:8px;transition:.15s}
+.item:hover{border-color:var(--line)}
+.item.dim{opacity:.55}
+.item-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.item-head .nm{font-weight:600;font-size:13.5px}
+.item-body{display:none;margin-top:10px;border-top:1px dashed var(--line);padding-top:8px}
+.item.open .item-body{display:block}
+.caret{transition:.15s;display:inline-block;color:var(--muted);font-size:11px}
+.item.open .caret{transform:rotate(90deg)}
+.scroll{max-height:600px;overflow:auto;padding-right:5px}
+
+/* ---------- 角色卡 ---------- */
+.charlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px}
+@media (max-width:720px){ .charlist{grid-template-columns:1fr} }
+.charcard{background:rgba(255,255,255,.86);border:1px solid var(--line-soft);border-radius:var(--radius);
+  padding:13px;box-shadow:var(--shadow-xs);transition:.16s}
+.charcard:hover{border-color:var(--line);box-shadow:var(--shadow-sm)}
+.charcard.off{opacity:.5}
+.charhead{display:flex;gap:11px;align-items:flex-start}
+.avatar{width:50px;height:50px;border-radius:14px;flex:0 0 50px;object-fit:cover;
+  background:linear-gradient(145deg,#d9f0fe,#b6e2f7);display:grid;place-items:center;
+  font-weight:700;color:var(--sea-1);overflow:hidden;box-shadow:var(--shadow-xs)}
+.avatar img{width:100%;height:100%;object-fit:cover}
+
+/* ---------- 成文工作台布局 ---------- */
+.work{display:grid;grid-template-columns:230px minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:980px){ .work{grid-template-columns:1fr} }
+.chapter-list{display:flex;flex-direction:column;gap:6px;max-height:min(660px,66vh);overflow:auto}
+.ch{padding:9px 11px;border-radius:var(--radius-sm);border:1px solid var(--line-soft);
+  background:rgba(255,255,255,.72);font-size:13px;text-align:left;color:var(--muted);transition:.15s}
+.ch:hover{background:#fff;border-color:var(--line)}
+.ch.active{border-color:var(--accent);color:var(--fg);background:#fff;box-shadow:var(--shadow-sm)}
+.ch b{display:block;color:inherit;font-weight:600}
+.ch span{font-size:11.5px;opacity:.8}
+.ch .chrowwrap{display:flex;align-items:flex-start;gap:6px}
+.ch .chmain{flex:1;min-width:0;cursor:pointer}
+.ch .chacts{display:flex;gap:2px;opacity:0;transition:opacity .15s;flex:0 0 auto}
+.ch:hover .chacts,.ch.active .chacts{opacity:1}
+.ch .chacts i{font-style:normal;font-size:12px;line-height:1;padding:4px 6px;border-radius:7px;cursor:pointer;color:var(--muted)}
+.ch .chacts i:hover{background:var(--sky-2);color:var(--sea-0)}
+.ch .chacts i.del:hover{color:var(--bad)}
+@media (max-width:980px){
+  .chapter-list{flex-direction:row;gap:8px;max-height:none;overflow-x:auto;overflow-y:hidden;padding-bottom:6px}
+  .ch{min-width:158px;flex:0 0 auto}
+  .ch .chacts{opacity:1}
+}
+.editor-head{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.editor-head input{flex:1;min-width:170px}
+#content{min-height:min(420px,48vh);font-size:15.5px;line-height:1.95}
+.meta{font-size:12px;color:var(--muted);display:flex;gap:14px;margin-top:8px;flex-wrap:wrap;align-items:center}
+
+/* ---------- 子页签 ---------- */
+.subtabs{display:flex;gap:8px;margin-bottom:14px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+.subtabs::-webkit-scrollbar{display:none}
+.subtab{flex:0 0 auto;background:rgba(255,255,255,.72);border:1px solid var(--line-soft);border-radius:999px;
+  padding:8px 16px;font-size:13.5px;color:var(--muted);transition:.16s;white-space:nowrap}
+.subtab:hover{color:var(--fg-soft);background:#fff}
+.subtab.active{border-color:var(--accent);color:var(--sea-1);background:#fff;font-weight:600;box-shadow:var(--shadow-sm)}
+.subtab .n{font-size:11px;opacity:.8;margin-left:3px}
+
+/* ---------- 对话出文 ---------- */
+.chat-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding-bottom:11px;
+  border-bottom:1px solid var(--line-soft);margin-bottom:12px}
+.chip{font-size:12.5px;background:var(--sunken);border:1px solid var(--line-soft);border-radius:999px;
+  padding:4px 12px;color:var(--sea-1);white-space:nowrap;font-weight:600}
+.seg{display:inline-flex;background:var(--sunken);border:1px solid var(--line-soft);border-radius:999px;padding:3px;gap:3px}
+.seg button{background:none;border:0;padding:5px 15px;border-radius:999px;font-size:13px;color:var(--muted);transition:.15s}
+.seg button:hover{color:var(--fg-soft)}
+.seg button.on{background:#fff;color:var(--sea-1);font-weight:600;box-shadow:var(--shadow-xs)}
+.popover{position:relative;background:#fff;border:1px solid var(--line);border-radius:14px;
+  padding:13px 15px;margin-bottom:12px;font-size:13px;box-shadow:var(--shadow)}
+.popover:before{content:'';position:absolute;top:-7px;right:66px;width:12px;height:12px;background:#fff;
+  border-left:1px solid var(--line);border-top:1px solid var(--line);transform:rotate(45deg)}
+.chatlog{display:flex;flex-direction:column;gap:13px;height:min(560px,64vh);overflow:auto;padding:2px 5px 2px 2px}
+.msg{
+  max-width:88%;border-radius:16px;padding:11px 15px;font-size:14.5px;line-height:1.85;
+  word-break:break-word;box-shadow:var(--shadow-xs)
+}
+/* 正文段落：气泡内与阅读页统一间距 */
+.para{margin:0 0 .88em}
+.para:last-child{margin-bottom:0}
+.msg.prose .bd .para{margin:0 0 .95em}
+.msg.user{align-self:flex-end;background:linear-gradient(135deg,#1ba2cc,#0b6f96);color:#fff;border:none}
+.msg.user .tag{color:rgba(255,255,255,.82)}
+.msg.ai{align-self:flex-start;background:#fff;border:1px solid var(--line-soft)}
+.msg.prose{max-width:97%;font-size:15px;line-height:1.98}
+.msg .body{white-space:pre-wrap}
+.msg .tag{font-size:11.5px;color:var(--muted);margin-bottom:7px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.msg .acts{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;align-items:center;
+  border-top:1px dashed var(--line);padding-top:9px}
+.msg .more{display:none;margin-top:8px;gap:6px;flex-wrap:wrap}
+.msg .more.open{display:flex}
+.morebtn{margin-left:auto;color:var(--muted)}
+.typing:after{content:'▍';color:var(--accent);animation:pulse 1s infinite}
+.composer{margin-top:13px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:11px;
+  transition:.16s;box-shadow:var(--shadow-sm)}
+.composer:focus-within{border-color:var(--accent);box-shadow:var(--ring),var(--shadow-sm)}
+.composer textarea{background:transparent;border:0;padding:4px 4px 0;min-height:86px;font-size:14.5px;box-shadow:none}
+.composer textarea:focus{border:0;box-shadow:none}
+.composer-foot{display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap}
+@media (max-width:720px){
+  .msg,.msg.prose{max-width:100%}
+  .chatlog{height:min(58vh,460px);gap:11px}
+  .composer textarea{min-height:66px}
+  .composer-foot .spacer{display:none}
+  .composer-foot #btnSend{flex:1}
+}
+
+/* ---------- 剧情建议 / 覆盖核对 ---------- */
+.idea{background:var(--sunken);border:1px solid var(--line-soft);border-radius:var(--radius-sm);padding:11px 13px;margin-top:9px}
+.idea .t{font-weight:600;font-size:14px;color:var(--sea-1);display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.idea .isum{font-size:13.5px;margin-top:6px;line-height:1.78;color:var(--fg-soft)}
+.idea .ireason{font-size:12.5px;color:var(--muted);margin-top:5px;line-height:1.7}
+.st{font-size:11px;padding:2px 8px;border-radius:999px}
+.st.ok{background:rgba(14,129,97,.13);color:#0a6549;border:1px solid rgba(14,129,97,.35)}
+.st.part{background:rgba(240,155,52,.15);color:#8f5202;border:1px solid rgba(240,155,52,.38)}
+.st.miss{background:rgba(207,68,68,.12);color:#a32a2a;border:1px solid rgba(207,68,68,.32)}
+
+/* ---------- 记忆 / 进度 ---------- */
+.gauge{height:9px;border-radius:6px;background:var(--sunken);overflow:hidden;margin:8px 0;border:1px solid var(--line-soft)}
+.gauge>i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,#2fb4d8,#0b6f96);transition:.35s}
+.gauge.hot>i{background:linear-gradient(90deg,var(--sun-2),var(--coral))}
+pre.prompt{background:var(--sunken);border:1px solid var(--line-soft);border-radius:var(--radius-sm);padding:13px;
+  font-size:12.5px;white-space:pre-wrap;word-break:break-word;max-height:52vh;overflow:auto;line-height:1.75;color:var(--fg-soft)}
+.empty{color:var(--muted);font-size:13.5px;text-align:center;padding:46px 22px;line-height:1.95}
+.empty:before{content:'〜';display:block;font-size:24px;color:var(--wave);margin-bottom:6px;letter-spacing:6px}
+
+/* ---------- 伏笔追踪 ---------- */
+.hookrow{display:flex;gap:10px;align-items:flex-start;padding:11px 13px;border-radius:var(--radius-sm);
+  border:1px solid var(--line-soft);background:#fff;margin-bottom:8px;box-shadow:var(--shadow-xs);transition:.15s}
+.hookrow:hover{border-color:var(--line);box-shadow:var(--shadow-sm)}
+.hookrow.closed{opacity:.66;background:var(--sunken)}
+.hookrow .ht{flex:1;min-width:0;font-size:13.5px;line-height:1.65}
+.hookrow .hm{font-size:11.5px;color:var(--muted);margin-top:4px}
+.hookrow .hm b{color:var(--warn);font-weight:600}
+.hookstat{flex:0 0 auto;font-size:11px;border-radius:999px;padding:2px 9px;border:1px solid var(--line-soft);white-space:nowrap}
+.hookstat.open{color:#8f5202;border-color:rgba(240,155,52,.45);background:rgba(240,155,52,.14)}
+.hookstat.closed{color:#0a6549;border-color:rgba(14,129,97,.35);background:rgba(14,129,97,.1)}
+.hookacts{display:flex;gap:4px;flex-direction:column;flex:0 0 auto}
+.hookage{font-size:11px;color:#b03030}
+.hookage.ok{color:var(--muted)}
+@media (max-width:720px){
+  .hookrow{flex-wrap:wrap}
+  .hookacts{flex-direction:row;flex-wrap:wrap;width:100%}
+}
+
+/* ---------- 目录与阅读 ---------- */
+.toc-wrap{display:grid;grid-template-columns:268px minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:980px){ .toc-wrap{grid-template-columns:1fr} }
+.toc-list{max-height:min(66vh,620px);overflow:auto;padding-right:5px}
+.tocrow{display:flex;gap:9px;align-items:flex-start;padding:9px 11px;border-radius:var(--radius-sm);cursor:pointer;
+  border:1px solid transparent;font-size:13.5px;line-height:1.55;transition:.15s}
+.tocrow:hover{background:rgba(255,255,255,.8);border-color:var(--line-soft)}
+.tocrow.on{background:#fff;border-color:var(--accent);box-shadow:var(--shadow-xs)}
+.tocrow .no{flex:0 0 26px;color:var(--muted);font-size:12px;padding-top:2px}
+.tocrow .tt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tocrow.draft .tt{color:var(--muted);font-style:italic}
+.tocrow .mk{flex:0 0 auto;font-size:10.5px;color:#0a6549;border:1px solid rgba(14,129,97,.35);
+  background:rgba(14,129,97,.1);border-radius:999px;padding:0 7px;margin-top:2px}
+.tocrow.draft .mk{color:#8f5202;border-color:rgba(240,155,52,.4);background:rgba(240,155,52,.13)}
+.commitbox{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#fff;border:1px solid var(--line);
+  border-radius:var(--radius-sm);padding:12px 14px;margin-top:10px;font-size:13px;box-shadow:var(--shadow-xs)}
+.commitbox.done{border-color:rgba(14,129,97,.4);background:rgba(14,129,97,.06)}
+.read{background:linear-gradient(180deg,#fffefb,#fff);border:1px solid var(--line-soft);border-radius:var(--radius);
+  padding:34px 40px;max-height:min(72vh,780px);overflow:auto;font-size:16px;line-height:2.08;color:#12293c;
+  font-family:ui-serif,Georgia,"Songti SC","Source Han Serif SC","Noto Serif SC",serif;box-shadow:var(--shadow-sm)}
+.read h2{font-size:20px;margin:0 0 6px;color:var(--sea-0);font-weight:700;letter-spacing:.5px;
+  font-family:"PingFang SC","Microsoft YaHei",sans-serif}
+.read .rsub{color:var(--muted);font-size:12.5px;margin-bottom:20px;border-bottom:1px dashed var(--line);padding-bottom:12px;
+  font-family:"PingFang SC","Microsoft YaHei",sans-serif}
+.read .para{text-indent:2em}
+@media (max-width:720px){ .read{padding:20px 17px;font-size:15.5px;line-height:1.98;max-height:none} }
+.legend{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.legend span{font-size:11.5px;border:1px solid var(--line-soft);border-radius:999px;padding:2px 10px;background:#fff}
+
+/* ---------- 对话着色与角色标识 ---------- */
+.dlg{font-weight:500}
+.dlg-n{font-size:.94em;font-weight:700;margin-right:1px}
+.cname{font-weight:700;border-bottom:1px dashed;padding-bottom:.5px}
+.castrow{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:8px;font-size:11.5px;color:var(--muted)}
+
+/* ---------- 书架 ---------- */
+.books{display:grid;grid-template-columns:repeat(auto-fill,minmax(196px,1fr));gap:20px}
+@media (max-width:720px){ .books{grid-template-columns:repeat(auto-fill,minmax(142px,1fr));gap:13px} }
+.book{background:rgba(255,255,255,.86);border:1px solid var(--line-soft);border-radius:var(--radius);overflow:hidden;
+  cursor:pointer;transition:transform .18s cubic-bezier(.2,.8,.3,1),box-shadow .18s,border-color .18s;
+  display:flex;flex-direction:column;box-shadow:var(--shadow-sm)}
+.book:hover{transform:translateY(-5px);border-color:var(--accent-2);box-shadow:var(--shadow-lg)}
+.book .cover{position:relative;aspect-ratio:3/4;background:var(--sky-2);overflow:hidden}
+.book .cover .ph{position:absolute;inset:0;display:grid;place-items:center;font-size:44px;
+  font-weight:700;color:#fff;text-shadow:0 3px 18px rgba(6,54,74,.45)}
+.book .cover img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.book .bacts{position:absolute;left:0;right:0;bottom:0;display:flex;gap:4px;padding:10px 8px;flex-wrap:wrap;
+  background:linear-gradient(transparent,rgba(6,54,74,.86));opacity:0;transition:opacity .18s}
+.book:hover .bacts{opacity:1}
+.book .bacts .btn{padding:2px 8px;font-size:11.5px;background:rgba(255,255,255,.92);border-color:transparent}
+.book .bkbody{padding:12px 13px 14px;display:flex;flex-direction:column;gap:7px}
+.book .bt{font-weight:600;font-size:14.5px;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--sea-0)}
+.book .bm{font-size:11.5px;color:var(--muted);display:flex;justify-content:space-between;gap:6px}
+.book .bar{height:6px;border-radius:6px;background:var(--sunken);overflow:hidden;border:1px solid var(--line-soft)}
+.book .bar>i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,#2fb4d8,#0b6f96)}
+.book.addbook{border-style:dashed;border-color:var(--line);align-items:center;justify-content:center;
+  min-height:260px;color:var(--muted);background:rgba(255,255,255,.5);box-shadow:none}
+.book.addbook:hover{color:var(--sea-1);border-color:var(--accent-2);background:#fff}
+.book.addbook .plus{font-size:36px;line-height:1;margin-bottom:8px}
+@media (max-width:720px){
+  .book .bacts{opacity:1}
+  .book .cover .ph{font-size:34px}
+  .book.addbook{min-height:190px}
+}
+.shelf-top input[type=search]{width:190px}
+.shelf-top select{width:130px}
+@media (max-width:900px){
+  .shelf-top input[type=search],.shelf-top select{width:100%}
+}
+
+/* ---------- 弹窗 ---------- */
+dialog{border:1px solid var(--line);background:#fff;color:var(--fg);border-radius:18px;padding:0;
+  width:min(640px,94vw);max-height:88vh;box-shadow:var(--shadow-lg);
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);margin:0}
+dialog::backdrop{background:rgba(6,54,74,.42);backdrop-filter:blur(3px)}
+.dlg-body{padding:22px;max-height:72vh;overflow:auto}
+.dlg-foot{display:flex;justify-content:flex-end;gap:8px;padding:0 22px 20px;flex-wrap:wrap}
+.dlg-body h3{margin:0 0 8px;font-size:17px;color:var(--sea-0);padding-right:40px}
+/* 弹窗右上角关闭：无论内容多长、键盘是否顶起，都有确定的出口 */
+.dlg-x{position:absolute;top:12px;right:12px;width:34px;height:34px;border-radius:50%;
+  border:1px solid var(--line);background:rgba(255,255,255,.92);color:var(--muted);
+  font-size:14px;line-height:1;display:grid;place-items:center;z-index:6;cursor:pointer;
+  transition:.15s;-webkit-tap-highlight-color:transparent}
+.dlg-x:hover{color:var(--bad);border-color:var(--bad);background:#fff;box-shadow:var(--shadow-xs)}
+.dlg-x:active{transform:scale(.94)}
+@media (max-width:720px){
+  dialog{width:100vw;max-width:100vw;height:100dvh;max-height:100dvh;border-radius:0;top:0;left:0;transform:none;
+    display:flex;flex-direction:column}
+  .dlg-body{flex:1;max-height:none;padding:18px 15px}
+  .dlg-foot{padding:12px 15px calc(12px + env(safe-area-inset-bottom))}
+}
+.warnbox{background:rgba(240,155,52,.1);border:1px solid rgba(240,155,52,.4);color:#8f5202;font-size:12.5px;
+  padding:11px 13px;border-radius:var(--radius-sm);margin-top:14px;line-height:1.7}
+.okbox{background:rgba(14,129,97,.08);border:1px solid rgba(14,129,97,.3);color:#0a6549;font-size:12.5px;
+  padding:11px 13px;border-radius:var(--radius-sm);margin-top:10px;line-height:1.7}
+.toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--sea-0);color:#fff;
+  border:1px solid rgba(255,255,255,.16);padding:10px 20px;border-radius:999px;font-size:13.5px;opacity:0;
+  pointer-events:none;transition:.28s cubic-bezier(.2,.8,.3,1);z-index:99;max-width:min(86vw,520px);
+  text-align:center;box-shadow:var(--shadow-lg)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(-8px)}
+
+/* ---------- 提示与诊断 ---------- */
+.aiword{display:inline-block;margin:0 4px 4px 0;font-size:12px;padding:2px 9px;border-radius:999px;
+  background:rgba(240,155,52,.13);border:1px solid rgba(240,155,52,.35);color:#8f5202}
+.apiok{background:rgba(14,129,97,.07);border:1px solid rgba(14,129,97,.3);border-radius:var(--radius-sm);
+  padding:12px 14px;margin-top:12px;font-size:13px}
+.apibad{background:rgba(207,68,68,.06);border:1px solid rgba(207,68,68,.32);border-radius:var(--radius-sm);
+  padding:12px 14px;margin-top:12px;font-size:13px}
+.step{display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-bottom:1px dashed var(--line-soft);font-size:13px}
+.step:last-child{border-bottom:0}
+.step .ic{flex:0 0 18px;text-align:center}
+.step .tx{flex:1;min-width:0;line-height:1.62}
+.fixbox{background:var(--sunken);border-left:3px solid var(--accent);border-radius:0 10px 10px 0;
+  padding:10px 13px;margin-top:10px;font-size:12.5px;line-height:1.78;color:var(--fg-soft)}
+.fixbox b{color:var(--warn)}
+code.inl{background:var(--sunken);border:1px solid var(--line-soft);border-radius:6px;padding:1px 6px;
+  font-size:12px;word-break:break-all;font-family:ui-monospace,Menlo,Consolas,monospace}
+.aifill{background:rgba(255,255,255,.9);border:1px solid var(--line);border-radius:8px;padding:2px 9px;
+  font-size:11.5px;color:var(--sea-1);float:right;margin-top:-2px;transition:.15s}
+.aifill:hover{border-color:var(--accent);background:#fff;box-shadow:var(--shadow-xs)}
+.aifill[disabled]{opacity:.4}
+
+/* ---------- 滚动条 ---------- */
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(14,136,176,.26);border-radius:9px;border:2px solid transparent;background-clip:content-box}
+::-webkit-scrollbar-thumb:hover{background:rgba(14,136,176,.42);background-clip:content-box}
+.scroll::-webkit-scrollbar-thumb{background:rgba(14,136,176,.26);background-clip:content-box}
+
+/* ---------- 窄屏细节 ---------- */
+@media (max-width:900px){
+  .stickytop{padding-top:calc(10px + env(safe-area-inset-top))}
+  .toast{bottom:calc(74px + env(safe-area-inset-bottom))}
+}
+/* ---------- 兜底：窄屏细节 ---------- */
+@media (max-width:520px){
+  .card{padding:14px;border-radius:14px;backdrop-filter:none;-webkit-backdrop-filter:none;background:rgba(255,255,255,.9)}
+  .topbar{gap:10px}
+  .btn{padding:7px 12px;font-size:13.5px}
+  .btn.sm{padding:5px 10px;font-size:12px}
+  .hint{font-size:11.5px}
+  .toolbar{gap:6px}
+  .chat-head{gap:8px}
+  .chip{font-size:12px;padding:3px 10px}
+}
+/* 低性能设备 / 窄屏：关掉高斯模糊，避免滚动发抖 */
+@media (max-width:720px){
+  .stickytop{backdrop-filter:none;-webkit-backdrop-filter:none;background:linear-gradient(180deg,rgba(250,253,255,.97),rgba(246,252,255,.9) 72%,rgba(246,252,255,0))}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.01ms !important;transition-duration:.01ms !important}
+}
+</style>
+</head>
+<body>
+<!-- 背景画：晴空 · 阳光 · 海浪 -->
+<div class="art" aria-hidden="true">
+  <div class="sky"></div><div class="sun"></div>
+  <div class="wave w1"></div><div class="wave w2"></div><div class="wave w3"></div>
+</div>
+
+<div class="shelf" id="shelfScreen">
+  <div class="stickytop">
+    <header class="shelf-top topbar">
+      <div class="logo">墨</div>
+      <div class="title-block">
+        <h1>我的书架</h1>
+        <div class="sub" id="shelfSub">每本书都是独立项目：设定 · 世界书 · 角色卡 · 章节 · 正文</div>
+      </div>
+      <div class="spacer"></div>
+      <button class="iconbtn" id="btnMenuShelf" title="菜单">⋯</button>
+      <div class="top-actions" id="shelfActions">
+        <input type="search" id="shelfSearch" placeholder="搜索书名 / 题材">
+        <select id="shelfSort">
+          <option value="updated">最近编辑</option>
+          <option value="created">创建时间</option>
+          <option value="words">字数最多</option>
+          <option value="title">书名排序</option>
+        </select>
+        <button class="btn sm" id="btnImportBook">⇧ 导入备份</button>
+        <button class="btn sm primary" id="btnNewBook">＋ 新建小说</button>
+      </div>
+    </header>
+  </div>
+  <div class="books" id="bookGrid"></div>
+</div>
+
+<div class="app" id="editorScreen" style="display:none">
+  <div class="stickytop">
+  <header class="top topbar">
+    <div class="logo">墨</div>
+    <div class="title-block">
+      <h1 id="headTitle">墨砚 · AI 小说创作台</h1>
+      <div class="sub">设定 · 世界书 · 角色卡 → 逐章成文 → 编入目录，设定自动随章节注入</div>
+    </div>
+    <div class="spacer"></div>
+    <div class="status" id="status"><span class="dot" id="dot"></span><span id="statusText">就绪</span></div>
+    <button class="iconbtn" id="btnMenu" title="菜单">⋯</button>
+    <div class="top-actions" id="editorActions">
+      <button class="btn sm" id="btnShelf">← 书架</button>
+      <button class="btn sm" id="btnProject">项目备份</button>
+      <button class="btn sm" id="btnExport">导出 TXT</button>
+      <button class="btn sm" id="btnConfig">API 设置</button>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="setup">① 作品设定</button>
+    <button class="tab" data-tab="world">② 世界观<span class="n" id="nWorld"></span></button>
+    <button class="tab" data-tab="chars">③ 角色卡<span class="n" id="nChars"></span></button>
+    <button class="tab" data-tab="style">④ 文风规则</button>
+    <button class="tab" data-tab="write">⑤ 成文与目录<span class="n" id="nWrite"></span></button>
+  </div>
+  </div>
+
+  <!-- ================= 设定 ================= -->
+  <section class="panel active" id="tab-setup">
+    <div class="grid">
+      <div class="card">
+        <h3>核心设定</h3>
+        <div class="row">
+          <div><label>书名</label><input type="text" id="f-title" placeholder="例如：长夜行舟"></div>
+          <div><label>题材类型</label>
+            <select id="f-genre">
+              <option>玄幻修真</option><option>都市异能</option><option>科幻末世</option>
+              <option>悬疑推理</option><option>古代言情</option><option>武侠江湖</option>
+              <option>历史穿越</option><option>幻想轻小说</option><option>现实题材</option>
+            </select>
+          </div>
+        </div>
+        <div class="row">
+          <div><label>叙事视角</label>
+            <select id="f-pov"><option>第三人称限知</option><option>第一人称</option><option>第三人称全知</option></select>
+          </div>
+          <div><label>单章字数</label>
+            <select id="f-words"><option>1500 字左右</option><option selected>2500 字左右</option><option>3500 字左右</option><option>5000 字左右</option></select>
+          </div>
+        </div>
+        <label>故事主线与结局（可选，越具体越不容易跑偏）</label>
+        <textarea id="f-mainline" placeholder="主角最终要达成什么？主要转折点？结局走向？"></textarea>
+        <label>补充设定 / 关键词</label>
+        <textarea id="f-extra" placeholder="任何你想固定下来的东西：时间线、货币、地理、禁忌……（更细的设定建议放进「世界观」做条目化，按章节自动注入）"></textarea>
+      </div>
+
+      <div class="card">
+        <h3>这套工作流怎么保证「不跑偏」</h3>
+        <p class="hint">
+          每次生成正文，系统按顺序拼装上下文：<br>
+          ① 作品设定 → ② 本章出场角色卡 → ③ 命中的世界书条目（含常驻条目）→ ④ 已编入目录的前情与章节梗概 → ⑤ 上一章结尾 → ⑥ 本章梗概要求。<br><br>
+          世界书采用关键词触发（和 SillyTavern 同一套逻辑）：上文扫描范围内出现关键词，对应设定才会注入，
+          因此几十万字的设定集也不会撑爆上下文；标记为<b>常驻</b>的条目则每章都注入。
+        </p>
+        <h3 style="margin-top:22px">快速开始</h3>
+        <div class="toolbar">
+          <button class="btn sm" onclick="document.querySelector('[data-tab=world]').click()">去导入世界书</button>
+          <button class="btn sm" onclick="document.querySelector('[data-tab=chars]').click()">去导入角色卡</button>
+          <button class="btn sm" onclick="document.querySelector('[data-tab=style]').click()">去设置文风</button>
+        </div>
+        <div class="hint">支持 SillyTavern 的世界书 JSON、角色卡 JSON / PNG（角色卡内嵌的世界书条目会一并导入并绑定到该角色）。</div>
+        <label>上下文注入上限（扫描最近多少字）</label>
+        <div class="row">
+          <div><label style="margin-top:0">扫描范围（字）</label><input type="number" id="s-scan" min="200" step="200"></div>
+          <div><label style="margin-top:0">世界书注入上限（字）</label><input type="number" id="s-budget" min="500" step="500"></div>
+        </div>
+        <label class="switch" style="margin-top:12px"><input type="checkbox" id="s-showprompt"> 生成前先预览提示词（调试用）</label>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 世界观 ================= -->
+  <section class="panel" id="tab-world">
+    <div class="card" style="margin-bottom:14px">
+      <div class="toolbar">
+        <button class="btn primary" id="btnImportWorld">⇧ 导入世界书</button>
+        <button class="btn" id="btnAddWorld">+ 新建条目</button>
+        <button class="btn" id="btnExportWorld">⇩ 导出为世界书</button>
+        <button class="btn" id="btnTestTrigger">🔍 触发测试</button>
+        <div class="spacer"></div>
+        <span class="hint" id="worldStat"></span>
+      </div>
+      <div class="hint">
+        兼容 SillyTavern 世界书格式（<code>entries</code> 对象/数组、<code>key</code>/<code>keys</code>、常驻与选择性触发、order 排序）。
+        关键词用英文逗号分隔；填了<b>次要关键词</b>则必须同时命中才注入。
+      </div>
+    </div>
+    <div class="card">
+      <div class="toolbar" style="margin-bottom:10px">
+        <input type="text" id="worldSearch" placeholder="搜索条目名称 / 关键词 / 内容…" style="max-width:320px">
+        <span class="hint" id="worldCount" style="margin:0"></span>
+      </div>
+      <div class="scroll" id="worldList"></div>
+    </div>
+  </section>
+
+  <!-- ================= 角色卡 ================= -->
+  <section class="panel" id="tab-chars">
+    <div class="card" style="margin-bottom:14px">
+      <div class="toolbar">
+        <button class="btn primary" id="btnImportChar">⇧ 导入角色卡（JSON / PNG）</button>
+        <button class="btn" id="btnAddChar">+ 新建角色</button>
+        <div class="spacer"></div>
+        <span class="hint" id="charStat"></span>
+      </div>
+      <div class="hint">
+        一本小说可以有多张角色卡。导入 SillyTavern V1/V2/V3 角色卡（含 PNG 内嵌卡）后，
+        可设置该角色的<b>出场章节范围</b>——只有出场区间内的章节才会把这张卡注入提示词，避免几十个角色互相干扰。
+      </div>
+    </div>
+    <div class="charlist" id="charList"></div>
+  </section>
+
+  <!-- ================= 文风规则 ================= -->
+  <section class="panel" id="tab-style">
+    <div class="grid2">
+      <div class="card">
+        <h3>文风预设 <span class="tip">点一下覆盖文风描述</span></h3>
+        <div class="toolbar" id="stylePresets"></div>
+
+        <label>文风描述（会写入系统提示词）</label>
+        <textarea id="f-style" style="min-height:120px" placeholder="例：文风冷峻克制，多用短句与白描；对话含潜台词，不直接点破情绪；避免抒情式排比。"></textarea>
+
+        <label>文风样例（可选，最有效的风格控制手段）</label>
+        <textarea id="f-sample" style="min-height:130px" placeholder="粘贴 1-3 段你想要的文风范文，AI 会模仿其节奏、句长与用词习惯。"></textarea>
+        <div class="hint">建议直接粘贴你喜欢的作者段落或你自己写过的满意片段。</div>
+      </div>
+
+      <div class="card">
+        <h3>写作法则（硬性规则）</h3>
+        <textarea id="f-rules" style="min-height:250px">1. 每章必须有明确的目标、冲突与结尾钩子。
+2. 用动作、对话和细节推进剧情，避免大段说明性旁白。
+3. 人物性格、能力、称呼必须与角色卡和前文一致，不得临时拔出新设定。
+4. 严格遵守世界书条目中的设定，与之冲突时以世界书为准。
+5. 不用"总之""综上所述""让我们"等总结性口吻，不替读者总结主题。
+6. 结尾留悬念，但不要强行断章或写"未完待续"。</textarea>
+
+        <label>禁用词 / 禁用表达（逗号或换行分隔）</label>
+        <textarea id="f-banned" style="min-height:70px" placeholder="例：绝美, 逆天, 冷笑一声, 值得深思"></textarea>
+
+        <div class="toolbar" style="margin-top:14px">
+          <button class="btn sm" id="btnAiCheck">检测 AI 味用词</button>
+          <span class="hint" id="aiCheckOut" style="margin:0"></span>
+        </div>
+        <div id="aiWords" style="margin-top:8px"></div>
+        <div class="hint">本地规则检测，会统计当前章节里常见的"AI 腔"高频词，供你判断是否需要重写或调整文风。</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 章节管理 ================= -->
+  <!-- ================= 成文工作台 ================= -->
+  <section class="panel" id="tab-write">
+    <div class="subtabs">
+      <button class="subtab active" data-sub="chat">💬 对话出文</button>
+      <button class="subtab" data-sub="text">✎ 正文编辑</button>
+      <button class="subtab" data-sub="toc">📖 目录阅读</button>
+      <button class="subtab" data-sub="mem">🧠 故事记忆</button>
+      <button class="subtab" data-sub="hook">🪝 伏笔追踪<span class="n" id="nHook"></span></button>
+    </div>
+
+    <div class="work">
+      <div class="card">
+        <h3>章节　<span class="tip" id="chapterHint"></span></h3>
+        <div class="chapter-list" id="chapterList"></div>
+      </div>
+
+      <div class="card">
+        <!-- ---------- 对话出文 ---------- -->
+        <div id="sub-chat">
+          <div class="chat-head">
+            <span class="chip" id="chatChapterChip">—</span>
+            <div class="seg" id="segMode">
+              <button class="on" data-mode="gist">出文</button>
+              <button data-mode="talk">讨论</button>
+              <button data-mode="revise">改稿</button>
+            </div>
+            <div class="spacer"></div>
+            <button class="iconbtn" id="btnIdeas" title="根据剧情与世界观，建议下一章方向">✦</button>
+            <button class="iconbtn" id="btnChatOpts" title="高级选项">⚙</button>
+          </div>
+          <div class="popover" id="chatOpts" style="display:none">
+            <label class="switch"><input type="checkbox" id="optAutoWrite"> 出文后直接写入本章正文</label>
+            <label class="switch"><input type="checkbox" id="optCover"> 出文后核对梗概覆盖情况</label>
+            <label class="switch"><input type="checkbox" id="optSuggest"> 出文后给出下一章建议</label>
+            <div class="toolbar" style="margin-top:8px">
+              <span class="hint" style="margin:0">建议条数</span>
+              <input type="number" id="optSuggestN" min="0" max="8" style="width:56px">
+              <div class="spacer"></div>
+              <button class="btn xs ghost" id="btnCtx">故事记忆</button>
+            </div>
+          </div>
+          <div class="chatlog" id="chatLog"></div>
+          <div class="composer">
+            <textarea id="chatInput" placeholder="写下这一章要写的内容（自然语言一段话可以，分条写也可以）。留空则由 AI 按主线与世界观自主推进。"></textarea>
+            <div class="composer-foot">
+              <button class="btn sm ghost" id="btnDraftGist" title="根据本章已有梗概、主线与世界观，帮你列出这一章要写的内容">✦ 帮我写梗概</button>
+              <span class="hint" id="ctxInfo"></span>
+              <div class="spacer"></div>
+              <button class="btn sm primary" id="btnSend">出文</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ---------- 目录阅读 ---------- -->
+        <div id="sub-toc" style="display:none">
+          <div class="card" style="margin-bottom:14px">
+            <div class="toolbar">
+              <button class="btn primary" id="btnTocNew">＋ 新建一章</button>
+              <label class="switch" style="margin:0"><input type="checkbox" id="tocShowDraft" checked> 显示未编入的草稿</label>
+              <div class="spacer"></div>
+              <span class="hint" id="tocStat"></span>
+              <button class="btn sm" id="btnReadExport">导出全书 TXT</button>
+            </div>
+            <div class="hint" style="margin-top:8px">
+              <b>编入目录 = 定稿</b>：编入后的章节成为本书的正式内容，随时可供阅读；后续每一章写作都以<b>已编入目录的内容</b>为准（未编入的草稿仅供参考，不计入正式记录）。
+            </div>
+          </div>
+          <div class="toc-wrap">
+            <div class="card sunken">
+              <h3 style="margin-top:0">目录</h3>
+              <div class="toc-list scroll" id="tocList"></div>
+            </div>
+            <div class="card sunken">
+              <div class="toolbar" style="margin-bottom:10px">
+                <span class="badge" id="readBadge">未选择章节</span>
+                <div class="spacer"></div>
+                <button class="btn xs" id="btnReadPrev">← 上一章</button>
+                <button class="btn xs" id="btnReadNext">下一章 →</button>
+                <button class="btn xs primary" id="btnReadEdit">去写这一章</button>
+                <button class="btn xs" id="btnReadCommit">编入/取消编入</button>
+              </div>
+              <div class="read" id="readPane">
+                <div class="empty">左侧点选一个章节即可阅读。<br>只有「已编入」的章节才会出现在正式目录里。</div>
+              </div>
+              <div class="legend" id="dlgLegend"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ---------- 正文编辑 ---------- -->
+        <div id="sub-text" style="display:none">
+          <div class="editor-head">
+            <input type="text" id="chapterTitle" placeholder="章节标题">
+            <button class="btn sm ghost" id="btnAiTitle" title="根据本章正文，让 AI 起标题">✦ 起标题</button>
+            <div class="spacer"></div>
+            <button class="btn sm primary" id="btnWrite">✦ 生成本章</button>
+            <button class="btn sm" id="btnContinue">续写</button>
+            <button class="btn sm" id="btnRewrite">重写</button>
+            <button class="btn sm" id="btnPolish">润色</button>
+          </div>
+          <div class="meta" id="injectPreview" style="margin-bottom:6px"></div>
+          <textarea id="content" placeholder="在「对话出文」里写梗概出文，也可以在这里直接手动编辑。"></textarea>
+          <div class="meta">
+            <span id="wordCount">0 字</span>
+            <span id="saveState"></span>
+            <div class="spacer"></div>
+            <button class="btn xs ghost" id="btnInspect">查看本章注入的设定</button>
+            <button class="btn xs ghost" id="btnPrompt">查看完整提示词</button>
+            <button class="btn xs ghost" id="btnCheck">一致性检查</button>
+          </div>
+        </div>
+
+        <!-- ---------- 故事记忆 ---------- -->
+        <div id="sub-mem" style="display:none">
+          <div class="grid2">
+            <div class="card sunken">
+              <h3>上下文预算与自动归纳</h3>
+              <label>输入上下文上限（字符，约 ÷1.4 = token）</label>
+              <input type="number" id="m-limit" step="1000">
+              <label>保留最近 N 章全文（其余只注入摘要）</label>
+              <input type="number" id="m-keep" min="0" max="5">
+              <label class="switch" style="margin-top:10px"><input type="checkbox" id="m-auto"> 接近上限时自动归纳压缩</label>
+              <label class="switch" style="margin-top:6px"><input type="checkbox" id="m-autosuggest"> 每章完成后自动给出下一章建议</label>
+              <label>默认建议条数</label>
+              <input type="number" id="m-suggestn" min="0" max="8">
+              <div class="gauge" id="ctxGauge"><i style="width:0%"></i></div>
+              <div class="hint" id="memStat"></div>
+              <div class="toolbar" style="margin-top:12px">
+                <button class="btn sm" id="btnResummarize">重新归纳全部章节</button>
+                <button class="btn sm" id="btnCompress">压缩前情总纲</button>
+                <button class="btn sm ghost" id="btnResetMem">清空记忆</button>
+              </div>
+              <h3 style="margin-top:18px">下次写作实际会送出的上下文</h3>
+              <pre class="prompt" id="ctxPreview" style="max-height:38vh"></pre>
+            </div>
+            <div class="card sunken">
+              <h3>章节摘要 <span class="tip">写作时按需注入，可手改</span></h3>
+              <div class="scroll" id="summaryList" style="max-height:66vh"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ---------- 伏笔追踪 ---------- -->
+        <div id="sub-hook" style="display:none">
+          <div class="card" style="margin-bottom:14px">
+            <div class="toolbar">
+              <button class="btn primary" id="btnRescanHooks">✦ 扫描全书识别伏笔</button>
+              <button class="btn sm" id="btnHookAdd">+ 手动添加伏笔</button>
+              <div class="spacer"></div>
+              <span class="hint" id="hookStat"></span>
+            </div>
+            <div class="hint" style="margin-top:8px">
+              每章写完会自动从摘要里抽取<b>埋下的伏笔</b>与<b>回收的伏笔</b>，对应上就自动标记为已回收。<br>
+              <b>未回收的伏笔会随看上下文一起发给 AI</b>，并在写新章时提醒你，避免埋了忘收。
+            </div>
+            <div class="toolbar" style="margin-top:10px">
+              <div class="seg" id="segHookFilter">
+                <button class="on" data-hf="open">未回收</button>
+                <button data-hf="closed">已回收</button>
+                <button data-hf="all">全部</button>
+              </div>
+              <div class="spacer"></div>
+              <span class="hint">高危：埋设超过 15 章仍未回收</span>
+            </div>
+          </div>
+          <div class="card">
+            <div id="hookList"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- 通用弹窗 -->
+<dialog id="dlg">
+  <div class="dlg-body" id="dlgBody"></div>
+  <div class="dlg-foot" id="dlgFoot"></div>
+</dialog>
+
+<!-- API 设置 -->
+<dialog id="dlgConfig">
+  <button class="dlg-x" id="cfgX" type="button" title="保存并关闭">✕</button>
+  <div class="dlg-body">
+    <h3>API 设置</h3>
+    <div class="hint">支持任意 OpenAI 兼容接口（OpenAI / DeepSeek / 通义 / 硅基流动 / 本地 Ollama 等）。不填 Key 则进入演示模式，用内置文本走通全流程。</div>
+    <div class="toolbar" style="margin-top:12px">
+      <button class="btn sm" id="cfgPresetDeepseek">DeepSeek</button>
+      <button class="btn sm" id="cfgPresetOpenai">OpenAI</button>
+      <button class="btn sm" id="cfgPresetSilicon">硅基流动</button>
+      <button class="btn sm" id="cfgPresetOllama">本地 Ollama</button>
+      <button class="btn sm" id="cfgPresetProxy">本地代理</button>
+    </div>
+    <label>接口地址 Base URL</label>
+    <input type="text" id="cfg-base" placeholder="https://api.deepseek.com/v1">
+    <label>API Key</label>
+    <input type="password" id="cfg-key" placeholder="sk-...">
+    <label>模型名</label>
+    <input type="text" id="cfg-model" placeholder="deepseek-chat">
+    <label>额外请求头（JSON，可选）</label>
+    <input type="text" id="cfg-headers" placeholder='{"HTTP-Referer":"..."}'>
+
+    <div class="toolbar" style="margin-top:16px">
+      <button class="btn primary" id="cfgTest">✦ 检测连接</button>
+      <span class="hint" style="margin:0">依次测试地址格式 → 模型列表 → 普通请求 → 流式请求</span>
+    </div>
+    <div id="cfgTestOut"></div>
+
+    <div class="warnbox">
+      Key 只保存在你本机浏览器 localStorage，不会上传第三方。私人自用没问题；
+      若将来要公开部署给他人使用，需要加后端代理保管 Key。
+    </div>
+  </div>
+  <div class="dlg-foot">
+    <button class="btn ghost" id="cfgProxy">下载本地代理脚本</button>
+    <button class="btn ghost" id="cfgCancel">取消</button>
+    <button class="btn primary" id="cfgSave">保存</button>
+  </div>
+</dialog>
+
+<input type="file" id="fileWorld" accept=".json,.txt" multiple hidden>
+<input type="file" id="fileChar" accept=".json,.png,.txt" multiple hidden>
+<input type="file" id="fileProject" accept=".json" hidden>
+<input type="file" id="fileBook" accept=".json" hidden>
+<input type="file" id="fileCover" accept="image/*" hidden>
+
+<div class="toast" id="toast"></div>
+
+
+
+<script>
+/* =========================================================
+   状态
+   ========================================================= */
+const LS_KEY = 'ai-novel-studio-v2';
+const LS_LIB = 'ai-novel-shelf-v1';
+const LS_BOOK = 'ai-novel-book-';
+const LS_API = 'ai-novel-api-v1';
+const DEFAULT_RULES = '1. 每章必须有明确的目标、冲突与结尾钩子。\n2. 用动作、对话和细节推进剧情，避免大段说明性旁白。\n3. 人物性格、能力、称呼必须与角色卡和前文一致，不得临时拔出新设定。\n4. 严格遵守世界书条目中的设定，与之冲突时以世界书为准。\n5. 不用"总之""综上所述""让我们"等总结性口吻，不替读者总结主题。\n6. 结尾留悬念，但不要强行断章或写"未完待续"。';
+
+function blankState(){
+  return {
+    meta:{title:'',genre:'玄幻修真',pov:'第三人称限知',chapters:30,words:'2500 字左右',
+          logline:'',mainline:'',extra:''},
+    rules:{style:'',sample:'',rules:DEFAULT_RULES,banned:''},
+    world:[], chars:[], outline:[], chapters:[], hooks:[], current:0,
+    settings:{scan:1200,budget:4000,showPrompt:false},
+    memory:{limit:24000,keepFull:1,auto:true,rolling:'',trackedUpto:0},
+    suggest:{cover:true,autoWrite:true,on:true,count:3},
+    api:{base:'',key:'',model:'',headers:''}
+  };
+}
+let state = blankState();
+let chatMode='gist';
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const uid = () => Math.random().toString(36).slice(2,10);
+const esc = s => String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function load(){
+  try{
+    const raw = localStorage.getItem(LS_KEY);
+    if(raw){
+      const d = JSON.parse(raw);
+      state = Object.assign(state, d);
+      state.meta = Object.assign({}, state.meta, d.meta||{});
+      state.rules = Object.assign({}, state.rules, d.rules||{});
+      state.settings = Object.assign({}, state.settings, d.settings||{});
+      state.api = Object.assign({}, state.api, d.api||{});
+      state.world = d.world||[]; state.chars = d.chars||[];
+      state.hooks = d.hooks||state.hooks||[];
+      state.memory = d.memory||state.memory;
+      state.suggest = d.suggest||state.suggest;
+    }
+  }catch(e){ console.warn('load failed',e); }
+}
+/* 把外部数据并入一个干净的状态（兼容旧版本缺失字段） */
+function mergeInto(st,d){
+  if(!d||typeof d!=='object') return st;
+  const base=blankState();
+  st=Object.assign(st,d);
+  st.meta=Object.assign(base.meta, d.meta||{});
+  st.rules=Object.assign(base.rules, d.rules||{});
+  st.settings=Object.assign(base.settings, d.settings||{});
+  st.memory=Object.assign(base.memory, d.memory||{});
+  st.suggest=Object.assign(base.suggest, d.suggest||{});
+  st.api=Object.assign(base.api, d.api||{});
+  st.world=d.world||[]; st.chars=d.chars||[];
+  st.outline=d.outline||[]; st.chapters=d.chapters||[]; st.hooks=d.hooks||[];
+  const n=st.outline.length;
+  st.current=Math.max(0, Math.min(Number(d.current)||0, Math.max(0,n-1)));
+  return st;
+}
+let saveTimer=null;
+function writeBook(){
+  try{ localStorage.setItem(LS_BOOK+currentId, JSON.stringify(state)); return true; }
+  catch(e){
+    toast('保存失败：浏览器存储空间已满。请「← 书架 → 导出」备份后清理旧书');
+    console.warn(e); return false;
+  }
+}
+function flushSave(){
+  clearTimeout(saveTimer);
+  if(currentId){ writeBook(); saveApi(); syncLibMeta(); }
+  saveLib();
+}
+function save(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(()=>{
+    if(currentId){ writeBook(); saveApi(); syncLibMeta(); saveLib(); }
+    else { try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(e){} }
+    const el=$('#saveState'); if(el) el.textContent='已自动保存 '+new Date().toLocaleTimeString('zh-CN',{hour12:false});
+  },400);
+}
+/* =========================================================
+   书架：多项目管理
+   ========================================================= */
+let lib = { active:'', items:[] };
+let currentId = '';
+
+function loadLib(){
+  try{
+    const r=localStorage.getItem(LS_LIB);
+    if(r){ const d=JSON.parse(r); lib={active:d.active||'', items:Array.isArray(d.items)?d.items:[]}; }
+  }catch(e){ console.warn('lib load failed',e); }
+}
+function saveLib(){ try{ localStorage.setItem(LS_LIB, JSON.stringify(lib)); }catch(e){ console.warn(e); } }
+function libItem(id){ return lib.items.find(x=>x.id===id); }
+function loadApi(){ try{ const r=localStorage.getItem(LS_API); return r?JSON.parse(r):null; }catch(e){ return null; } }
+function saveApi(){ try{ localStorage.setItem(LS_API, JSON.stringify(state.api||{})); }catch(e){} }
+
+function wordsOf(st){ return (st.chapters||[]).reduce((n,c)=>n+((c&&c.content)?c.content.replace(/\s/g,'').length:0),0); }
+function doneOf(st){ return (st.chapters||[]).filter(c=>c&&c.content&&c.content.trim()).length; }
+function fmtW(n){ n=n||0; return n>=10000 ? (n/10000).toFixed(1)+' 万' : String(n); }
+function fmtTime(t){
+  if(!t) return '';
+  const d=Date.now()-t;
+  if(d<60000) return '刚刚';
+  if(d<3600000) return Math.floor(d/60000)+' 分钟前';
+  if(d<86400000) return Math.floor(d/3600000)+' 小时前';
+  if(d<86400000*7) return Math.floor(d/86400000)+' 天前';
+  const dt=new Date(t); return (dt.getMonth()+1)+'月'+dt.getDate()+'日';
+}
+/* 把当前 state 的概要回写到书架条目 */
+function syncLibMeta(){
+  const it=libItem(currentId); if(!it) return;
+  it.title=(state.meta.title||'').trim()||'未命名作品';
+  it.genre=state.meta.genre||'';
+  it.pov=state.meta.pov||'';
+  it.logline=state.meta.logline||'';
+  it.words=wordsOf(state);
+  it.chapters=(state.outline||[]).length;
+  it.done=doneOf(state);
+  it.updated=Date.now();
+  const ht=$('#headTitle'); if(ht) ht.textContent=it.title;
+}
+function createBook(title,genre){
+  const id=uid()+Date.now().toString(36).slice(-4);
+  lib.items.unshift({ id, title:(title||'').trim()||'未命名作品', genre:genre||'玄幻修真',
+    pov:'第三人称限知', logline:'', cover:'',
+    created:Date.now(), updated:Date.now(), words:0, chapters:0, done:0 });
+  lib.active=lib.active||id;
+  saveLib();
+  return id;
+}
+function readBook(id){
+  let st=blankState();
+  try{ const raw=localStorage.getItem(LS_BOOK+id); if(raw) st=mergeInto(st,JSON.parse(raw)); }catch(e){ console.warn(e); }
+  return st;
+}
+function openBook(id){
+  const it=libItem(id); if(!it){ toast('这本书已不存在'); showShelf(); return; }
+  flushSave();
+  currentId=id; lib.active=id; saveLib();
+  state=readBook(id);
+  const api=loadApi(); if(api) state.api=Object.assign(state.api, api);
+  chatMode='gist';
+  ensureMem();
+  const ht=$('#headTitle'); if(ht) ht.textContent=it.title||'未命名作品';
+  const ss=$('#saveState'); if(ss) ss.textContent='';
+  initEditorView();
+  showEditor();
+  const hd=$('#dot'); if(hd) hd.className='dot';
+  $('#statusText').textContent = state.api.key?'已接入模型':'演示模式';
+}
+function initEditorView(){
+  fillForms(); bindSuggestToggles();
+  readIdx=Math.max(0,Math.min(state.current,Math.max(0,state.outline.length-1)));
+  renderWorld(); renderChars(); renderOutline(); renderChapters(); updateCounters();
+  renderChat(); renderSummaries(); updateCtxInfo(); setChatMode('gist'); installAiFields();
+  renderTOC(); renderHooks(); refreshInjectPreview();
+}
+function showShelf(){ flushSave(); $('#shelfScreen').style.display=''; $('#editorScreen').style.display='none'; renderShelf(); }
+function showEditor(){ $('#shelfScreen').style.display='none'; $('#editorScreen').style.display=''; }
+function hashStr(s){ let h=0; s=String(s||''); for(let i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))|0; return h; }
+function coverHTML(it){
+  if(it.cover) return `<img src="${esc(it.cover)}" alt="">`;
+  const ch=(it.title||'书').trim().slice(0,1)||'书';
+  const hue=Math.abs(hashStr(it.title||'书'))%360;
+  return `<span class="ph" style="background:linear-gradient(150deg,hsl(${hue},58%,52%),hsl(${(hue+42)%360},62%,34%))">${esc(ch)}</span>`;
+}
+function renderShelf(){
+  const box=$('#bookGrid'); if(!box) return;
+  const q=($('#shelfSearch').value||'').trim().toLowerCase();
+  const sort=$('#shelfSort').value||'updated';
+  let items=lib.items.slice();
+  if(q) items=items.filter(x=>((x.title||'')+(x.genre||'')+(x.logline||'')).toLowerCase().includes(q));
+  items.sort((a,b)=>{
+    if(sort==='title') return String(a.title||'').localeCompare(String(b.title||''),'zh');
+    if(sort==='words') return (b.words||0)-(a.words||0);
+    if(sort==='created') return (b.created||0)-(a.created||0);
+    return (b.updated||0)-(a.updated||0);
+  });
+  const tw=lib.items.reduce((n,x)=>n+(x.words||0),0);
+  const tl=lib.items.reduce((n,x)=>n+(x.done||0),0);
+  $('#shelfSub').innerHTML = lib.items.length
+    ? `共 ${lib.items.length} 本 · 已写 ${tl} 章 · 累计 ${fmtW(tw)} 字`
+    : '每本书都是独立项目：设定 · 世界书 · 角色卡 · 章节 · 正文';
+  if(!items.length){
+    box.innerHTML = lib.items.length
+      ? '<div class="empty" style="grid-column:1/-1">没有匹配的书名。</div>'
+      : '<div class="empty" style="grid-column:1/-1">书架还是空的。<br>点右上角「＋ 新建小说」开始写第一本。</div>'
+        + '<div class="book addbook" id="addBookCard"><div class="plus">＋</div><div>新建小说</div></div>';
+    const a=$('#addBookCard'); if(a) a.onclick=newBookDialog;
+    return;
+  }
+  box.innerHTML = items.map(it=>{
+    const pct = it.chapters ? Math.min(100,Math.round((it.done||0)/it.chapters*100)) : 0;
+    const isCur = it.id===currentId;
+    return `<div class="book" data-open="${it.id}">
+      <div class="cover">${coverHTML(it)}
+        <div class="bacts">
+          <button class="btn xs" data-act="cover" data-id="${it.id}">封面</button>
+          <button class="btn xs" data-act="rename" data-id="${it.id}">改名</button>
+          <button class="btn xs" data-act="dup" data-id="${it.id}">复制</button>
+          <button class="btn xs" data-act="exp" data-id="${it.id}">导出</button>
+          <button class="btn xs danger" data-act="del" data-id="${it.id}">删除</button>
+        </div>
+      </div>
+      <div class="bkbody">
+        <div class="bt" title="${esc(it.title||'')}">${esc(it.title||'未命名作品')}${isCur?' <span class="badge on">当前</span>':''}</div>
+        <div class="bm"><span>${esc(it.genre||'其他')}</span>${fmtW(it.words||0)} 字</div>
+        <div class="bar"><i style="width:${pct}%"></i></div>
+        <div class="bm"><span>已写 ${it.done||0}/${it.chapters||0} 章</span>${fmtTime(it.updated)}</div>
+      </div>
+    </div>`;
+  }).join('') + '<div class="book addbook" id="addBookCard"><div class="plus">＋</div><div>新建小说</div></div>';
+  box.querySelectorAll('.book').forEach(el=>{
+    el.onclick=e=>{
+      const b=e.target.closest('button[data-act]');
+      if(b){ e.stopPropagation(); shelfAction(b.dataset.act, b.dataset.id); return; }
+      if(el.id==='addBookCard'){ newBookDialog(); return; }
+      if(el.dataset.open) openBook(el.dataset.open);
+    };
+  });
+}
+async function shelfAction(act,id){
+  const it=libItem(id); if(!it) return;
+  if(act==='rename'){
+    const t=prompt('新的书名：', it.title||'');
+    if(t==null) return;
+    it.title=t.trim()||it.title; it.updated=Date.now();
+    if(currentId===id){ state.meta.title=it.title; save(); }
+    saveLib(); renderShelf();
+    const ht=$('#headTitle'); if(ht&&currentId===id) ht.textContent=it.title;
+    toast('已改名为《'+it.title+'》');
+  }
+  else if(act==='cover'){ coverTarget=id; $('#fileCover').click(); }
+  else if(act==='dup'){
+    if(!confirm('把《'+it.title+'》完整复制一本？')) return;
+    if(currentId===id) flushSave();
+    const nid=createBook(it.title+'· 副本', it.genre);
+    const nit=libItem(nid);
+    nit.cover=it.cover||'';
+    try{ const raw=localStorage.getItem(LS_BOOK+id); if(raw) localStorage.setItem(LS_BOOK+nid, raw); }catch(e){ toast('复制失败：存储空间不足'); }
+    nit.words=it.words; nit.chapters=it.chapters; nit.done=it.done; nit.logline=it.logline;
+    saveLib(); renderShelf(); toast('已复制');
+  }
+  else if(act==='exp'){ exportBook(id); }
+  else if(act==='del'){
+    if(!confirm('删除《'+it.title+'》？\n该书的设定、世界书、角色卡、章节与正文都会一并删除，无法恢复。\n建议先点「导出」备份。')) return;
+    lib.items=lib.items.filter(x=>x.id!==id);
+    try{ localStorage.removeItem(LS_BOOK+id); }catch(e){}
+    if(lib.active===id) lib.active=(lib.items[0]&&lib.items[0].id)||'';
+    if(currentId===id) currentId='';
+    saveLib(); renderShelf(); toast('已删除');
+  }
+}
+function exportBook(id){
+  if(id===currentId) flushSave();
+  const st=readBook(id);
+  const it=libItem(id)||{};
+  download((it.title||'未命名作品')+'.墨砚项目.json', JSON.stringify(st,null,2), 'application/json');
+  toast('已导出《'+(it.title||'')+'》');
+}
+let coverTarget='';
+function newBookDialog(){
+  openDlg(`<h3>新建小说</h3>
+    <div class="hint">每本书拥有独立的设定、世界书、角色卡、章节与正文。</div>
+    <label>书名</label><input type="text" id="nb-title" placeholder="例如：长夜行舟">
+    <label>题材</label><input type="text" id="nb-genre" value="玄幻修真">
+    <div class="hint" style="margin-top:8px">创建后可以直接在「作品设定」里用 ✦ AI 一键补全。</div>`,
+    [{label:'取消'},
+     {label:'创建并进入',cls:'primary',fn:()=>{
+       const t=($('#nb-title').value||'').trim();
+       const g=($('#nb-genre').value||'').trim()||'玄幻修真';
+       const id=createBook(t,g);
+       openBook(id);
+       toast('已创建《'+(t||'未命名作品')+'》');
+     }}]);
+}
+
+/* =========================================================
+   目录与阅读
+   ========================================================= */
+let readIdx=0;function renderTOC(){
+  const box=$('#tocList'); if(!box) return;
+  const showDraft=$('#tocShowDraft').checked;
+  const total=state.outline.length;
+  if(!total){
+    box.innerHTML='<div class="hint" style="padding:8px">还没有章节。<br>去「对话出文」写第一章，或点上方「＋ 新建一章」。</div>';
+    $('#tocStat').textContent='';
+    renderRead();
+    return;
+  }
+  let html='', shown=0, cm=0;
+  for(let i=0;i<total;i++){
+    const ch=state.chapters[i]||{};
+    const ol=state.outline[i]||{};
+    const has=!!(ch.content&&ch.content.trim());
+    if(ch.committed&&has) cm++;
+    if(!showDraft && !(ch.committed&&has)) continue;
+    shown++;
+    const cls=[i===readIdx?'on':'', (ch.committed&&has)?'':'draft'].join(' ');
+    html+=`<div class="tocrow ${cls}" data-i="${i}">
+      <span class="no">${String(i+1).padStart(2,'0')}</span>
+      <span class="tt" title="${esc(ol.title||ch.title||'')}">${esc(ol.title||ch.title||'（无标题）')}</span>
+      <span class="mk">${(ch.committed&&has)?'已编入':(has?'草稿':'未写')}</span>
+    </div>`;
+  }
+  box.innerHTML=html||'<div class="hint">没有可显示的章节（勾上「显示未编入的草稿」可看到全部）</div>';
+  box.querySelectorAll('.tocrow').forEach(el=>el.onclick=()=>{ readIdx=+el.dataset.i; renderTOC(); });
+  const w=state.chapters.reduce((n,c)=>n+((c&&c.content)?c.content.replace(/\s/g,'').length:0),0);
+  $('#tocStat').textContent=`共 ${total} 章　已编入 ${cm} 章　正文 ${w.toLocaleString()} 字`;
+  renderRead();
+}
+function renderRead(){
+  const pane=$('#readPane'); if(!pane) return;
+  const i=readIdx;
+  const ch=state.chapters[i]||{};
+  const ol=state.outline[i]||{};
+  const title=ol.title||ch.title||'';
+  const hooks=ensureHooks();
+  const hp=hooks.filter(h=>h.plant===i).length, hr=hooks.filter(h=>h.status!=='open'&&h.resolve===i).length;
+  const hinfo=(hp||hr)?`　· 埋设伏笔 ${hp} · 回收伏笔 ${hr}`:'';
+  $('#readBadge').innerHTML=(i<state.outline.length)
+    ? `<span class="badge ${ch.committed&&ch.content?'ok':'warn'}">${ch.committed&&ch.content?'已编入目录':'未编入'}</span> 第 ${i+1} 章`
+    : '<span class="badge">未选择章节</span>';
+  if(!(ch.content&&ch.content.trim())){
+    pane.innerHTML=`<div class="empty">第 ${i+1} 章${title?'《'+esc(title)+'》':''} 还没有正文。<br>去「对话出文」写这一章，写完后点「编入书籍目录」即可在此阅读。</div>`;
+    $('#dlgLegend').innerHTML='';
+    return;
+  }
+  const html=proseHTML(ch.content,true);
+  const n=ch.content.replace(/\s/g,'').length;
+  pane.innerHTML=`<h2>第 ${i+1} 章　${esc(title||'（无标题）')}</h2>
+    <div class="rsub">${n.toLocaleString()} 字　${ch.committed?'· 已编入目录（定稿）':'· 草稿（尚未编入目录）'}　${ch.committedAt?'· 编入于 '+new Date(ch.committedAt).toLocaleDateString('zh-CN'):''}${hinfo}</div>
+    ${html}`;
+  const used=proseHTML.lastUsed||[];
+  $('#dlgLegend').innerHTML = used.length
+    ? `<span class="hint" style="margin:0">出场角色卡：</span>`+nameLegend(used)
+    : '';
+}
+
+function toast(msg){
+  const t=$('#toast'); t.textContent=msg; t.classList.add('show');
+  clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2200);
+}
+function setBusy(busy,text){
+  $('#dot').className='dot'+(busy?' busy':'');
+  $('#statusText').textContent = text || (busy?'生成中…':'就绪');
+  $$('.btn.primary').forEach(b=>b.disabled=busy);
+}
+function openDlg(html, buttons){
+  const dlg=$('#dlg');
+  // 统一的关闭按钮：无论弹窗多长、键盘是否顶起，都有确定的出口
+  if(!dlg.querySelector('.dlg-x')){
+    const x=document.createElement('button');
+    x.className='dlg-x'; x.type='button'; x.textContent='✕'; x.title='关闭';
+    x.onclick=()=>dlg.close();
+    dlg.prepend(x);
+  }
+  $('#dlgBody').innerHTML = html;
+  const foot=$('#dlgFoot'); foot.innerHTML='';
+  (buttons||[{label:'关闭'}]).forEach((b,i)=>{
+    const el=document.createElement('button');
+    el.className='btn '+(b.cls||'');
+    el.textContent=b.label;
+    el.onclick=()=>{ if(!b.fn || b.fn()!==false) $('#dlg').close(); };
+    if(i===(buttons||[]).length-1 && !b.cls) el.classList.add('primary');
+    foot.appendChild(el);
+  });
+  $('#dlg').showModal();
+}
+function download(name, text, mime){
+  const blob=new Blob([text],{type:(mime||'text/plain')+';charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download=name; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+}
+
+/* =========================================================
+   标签页
+   ========================================================= */
+$$('.tab').forEach(t=>t.onclick=()=>{
+  $$('.tab').forEach(x=>x.classList.remove('active'));
+  $$('.panel').forEach(x=>x.classList.remove('active'));
+  t.classList.add('active'); $('#tab-'+t.dataset.tab).classList.add('active');
+  if(t.dataset.tab==='write'){
+    updateCtxInfo();
+    if($('#sub-chat').style.display!=='none') renderChat();
+  }
+});
+
+/* =========================================================
+   作品设定表单
+   ========================================================= */
+const FIELDS={title:'#f-title',genre:'#f-genre',pov:'#f-pov',words:'#f-words',
+  mainline:'#f-mainline',extra:'#f-extra'};
+const RFIELDS={style:'#f-style',sample:'#f-sample',rules:'#f-rules',banned:'#f-banned'};
+const SFIELDS={scan:'#s-scan',budget:'#s-budget'};
+
+function fillForms(){
+  for(const k in FIELDS){ const el=$(FIELDS[k]); if(el) el.value = state.meta[k] ?? ''; }
+  for(const k in RFIELDS){ const el=$(RFIELDS[k]); if(el) el.value = state.rules[k] ?? ''; }
+  for(const k in SFIELDS){ const el=$(SFIELDS[k]); if(el) el.value = state.settings[k] ?? ''; }
+  $('#s-showprompt').checked = !!state.settings.showPrompt;
+}
+function bindForms(){
+  for(const k in FIELDS){ const el=$(FIELDS[k]); el && el.addEventListener('input',()=>{ state.meta[k]=el.value; save(); }); }
+  for(const k in RFIELDS){ const el=$(RFIELDS[k]); el && el.addEventListener('input',()=>{ state.rules[k]=el.value; save(); }); }
+  for(const k in SFIELDS){ const el=$(SFIELDS[k]); el && el.addEventListener('input',()=>{ state.settings[k]=+el.value||0; save(); refreshInjectPreview(); }); }
+  $('#s-showprompt').addEventListener('change',e=>{ state.settings.showPrompt=e.target.checked; save(); });
+}
+
+/* 文风预设 */
+const STYLE_PRESETS=[
+ ['冷峻克制','文风冷峻克制，多用短句与白描，少用形容词和比喻；情绪通过动作与细节呈现，不直接描写心理；对话简短、有潜台词，不点破。'],
+ ['江湖古龙','文风凌厉简洁，短句成段，节奏如刀；对话机锋暗藏，善用留白与悬念；不写冗长打斗过程，重气氛与人物姿态。'],
+ ['细腻抒情','文风细腻绵长，重视环境与人物的感官细节，比喻克制但精准；情绪层层递进，允许适度留白式抒情，但避免滥情。'],
+ ['网文爽感','节奏明快，开篇即冲突；每章有明确的爽点或反转；语言直白好读，对话推动剧情；避免大段解释性设定，设定随剧情带出。'],
+ ['轻小说','语言轻快活泼，第一人称代入感强，允许吐槽与内心独白式幽默；对话占比高，节奏跳跃，善用短句营造回忆感。'],
+ ['悬疑冷调','叙述客观冷静，信息克制释放；重视细节的暗示性，善用日常反常；不使用交代式旁白，让读者自行推断。'],
+ ['硬核科幻','术语准确、逻辑严密，设定自洽；叙述理性，情感描写克制；场景与器械描写具象可感，避免空泛的宏大抒情。'],
+ ['古典文言','略带文言色彩的典雅白话，句式整齐，用词考究；善用对仗与意象，但保持可读性，不致诘屈聱牙。']
+];
+function renderStylePresets(){
+  $('#stylePresets').innerHTML = STYLE_PRESETS.map((p,i)=>`<button class="btn sm" data-p="${i}">${p[0]}</button>`).join('');
+  $$('#stylePresets [data-p]').forEach(b=>b.onclick=()=>{
+    state.rules.style = STYLE_PRESETS[+b.dataset.p][1];
+    $('#f-style').value = state.rules.style; save();
+    toast('已套用文风预设：'+STYLE_PRESETS[+b.dataset.p][0]);
+  });
+}
+
+/* AI 味检测 */
+const AI_WORDS=['总而言之','综上所述','值得一提的是','不言而喻','显而易见','毫无疑问','与此同时','尽管如此','然而','不禁','仿佛','彷佛','或许','某种','深深地','缓缓地','轻轻地','一丝','不由得','随即','瞬间','内心深处','五味杂陈','嘴角勾起','微微一笑','淡淡地','默默地','若有所思','空气中弥漫着','仿佛在诉说着','让人不禁','不禁让人','这一刻','在这个瞬间','复杂的情绪','难以言喻','无法形容','命运的齿轮','不由得让人'];
+$('#btnAiCheck').onclick = ()=>{
+  const txt = $('#content').value || '';
+  if(!txt.trim()){ toast('本章还没有正文'); return; }
+  const hits = AI_WORDS.map(w=>({w,n:(txt.split(w).length-1)})).filter(x=>x.n>0).sort((a,b)=>b.n-a.n);
+  const total = hits.reduce((s,x)=>s+x.n,0);
+  $('#aiCheckOut').textContent = total ? `共命中 ${total} 处` : '未发现明显 AI 腔用词';
+  $('#aiWords').innerHTML = hits.map(h=>`<span class="aiword">${esc(h.w)} × ${h.n}</span>`).join('');
+  if(!total) toast('本章用词比较干净');
+};
+
+/* =========================================================
+   世界书（SillyTavern 兼容）
+   ========================================================= */
+function toKeys(v){
+  if(Array.isArray(v)) return v.map(x=>String(x).trim()).filter(Boolean);
+  if(typeof v==='string') return v.split(/[,，\n]/).map(x=>x.trim()).filter(Boolean);
+  return [];
+}
+function normWorldEntry(e){
+  return {
+    id: uid(),
+    comment: e.comment || e.name || e.title || (toKeys(e.keys||e.key)[0]||'未命名条目'),
+    keys: toKeys(e.keys ?? e.key),
+    secondary: toKeys(e.keysecondary ?? e.secondary_keys ?? e.secondaryKeys),
+    content: String(e.content ?? e.entry ?? ''),
+    constant: !!(e.constant ?? e.alwaysOn),
+    enabled: !(e.disable ?? e.disabled ?? false),
+    order: Number(e.order ?? e.insertion_order ?? e.insertionOrder ?? 100) || 100,
+    linkedChar: e.linkedChar || null,
+    _raw: e
+  };
+}
+function worldToST(){
+  const entries={};
+  state.world.forEach((e,i)=>{
+    entries[String(i)] = Object.assign({}, e._raw||{}, {
+      uid:i, key:e.keys, keysecondary:e.secondary, comment:e.comment,
+      content:e.content, constant:e.constant, selective:e.secondary.length>0,
+      disable:!e.enabled, order:e.order, insertion_order:e.order,
+      position: (e._raw&&e._raw.position) ?? 0, depth:(e._raw&&e._raw.depth) ?? 4,
+      addMemo:true, displayIndex:i
+    });
+  });
+  return { entries, originalData:{ name: state.meta.title||'未命名', source:'墨砚' } };
+}
+function parseWorldFile(text){
+  const j = JSON.parse(text);
+  let arr = [];
+  if(Array.isArray(j)) arr = j;
+  else if(j && j.entries){
+    arr = Array.isArray(j.entries) ? j.entries : Object.values(j.entries);
+  }
+  else if(j && j.data && j.data.entries) arr = Object.values(j.data.entries);
+  else if(j && j.world_info) arr = Object.values(j.world_info);
+  else if(j && (j.content||j.keys||j.key)) arr = [j];
+  return arr.map(normWorldEntry);
+}
+function importWorldFiles(files){
+  let added=0, failed=0;
+  [...files].forEach(f=>{
+    const r=new FileReader();
+    r.onload=()=>{
+      try{
+        const list=parseWorldFile(r.result);
+        if(!list.length) throw new Error('没有解析到条目');
+        state.world = state.world.concat(list); added+=list.length;
+        renderWorld(); save();
+        toast(`已导入 ${f.name}：${list.length} 条`);
+      }catch(e){ failed++; toast('导入失败：'+f.name+'（'+e.message+'）'); }
+      updateCounters();
+    };
+    r.readAsText(f,'utf-8');
+  });
+  if(files.length>1) setTimeout(()=>toast(`共导入 ${added} 条世界书条目${failed?'，失败 '+failed+' 个':''}`),700);
+}
+function renderWorld(){
+  const box=$('#worldList');
+  const kw=$('#worldSearch').value.trim().toLowerCase();
+  let list = state.world;
+  if(kw) list = list.filter(e=>(e.comment+e.keys.join(',')+e.secondary.join(',')+e.content).toLowerCase().includes(kw));
+  if(!state.world.length){
+    box.innerHTML='<div class="empty">还没有世界书条目。<br>点上方「导入世界书」导入 SillyTavern 的 JSON 世界书，或「新建条目」手写一条。</div>';
+  } else if(!list.length){
+    box.innerHTML='<div class="empty">没有匹配的条目。</div>';
+  } else {
+    box.innerHTML = list.map(e=>{
+      const i = state.world.indexOf(e);
+      const linked = e.linkedChar ? state.chars.find(c=>c.id===e.linkedChar) : null;
+      return `<div class="item ${e.enabled?'':'dim'}" data-i="${i}">
+        <div class="item-head">
+          <span class="caret">▶</span>
+          <span class="nm">${esc(e.comment||'未命名')}</span>
+          ${e.constant?'<span class="badge on">常驻</span>':(e.keys.length?'<span class="badge">'+esc(e.keys.slice(0,4).join(' / '))+ (e.keys.length>4?' …':'')+'</span>':'<span class="badge warn">无关键词·不会触发</span>')}
+          ${e.secondary.length?'<span class="badge">需同时命中：'+esc(e.secondary.join(' / '))+'</span>':''}
+          ${linked?'<span class="badge ok">绑定 '+esc(linked.name)+'</span>':''}
+          <div class="spacer"></div>
+          <span class="hint" style="margin:0">${e.content.length} 字</span>
+          <button class="btn xs ghost" data-aifill="${i}">✦ AI 补全</button>
+          <button class="btn xs ghost" data-toggle="${i}">${e.enabled?'停用':'启用'}</button>
+          <button class="btn xs ghost danger" data-del="${i}">删除</button>
+        </div>
+        <div class="item-body">
+          <div class="row3">
+            <div><label style="margin-top:0">条目名称</label><input type="text" data-i="${i}" data-f="comment" value="${esc(e.comment)}"></div>
+            <div><label style="margin-top:0">触发关键词（逗号分隔）</label><input type="text" data-i="${i}" data-f="keys" value="${esc(e.keys.join(', '))}"></div>
+            <div><label style="margin-top:0">次要关键词（可选，需同时命中）</label><input type="text" data-i="${i}" data-f="secondary" value="${esc(e.secondary.join(', '))}"></div>
+          </div>
+          <label>设定内容</label>
+          <textarea data-i="${i}" data-f="content" style="min-height:130px">${esc(e.content)}</textarea>
+          <div class="row" style="margin-top:8px;align-items:center">
+            <div class="toolbar">
+              <label class="switch" style="margin:0"><input type="checkbox" data-i="${i}" data-f="constant" ${e.constant?'checked':''}> 常驻（每章必注入）</label>
+            </div>
+            <div class="toolbar">
+              <span class="hint" style="margin:0">插入优先级 order</span>
+              <input type="number" data-i="${i}" data-f="order" value="${e.order}" style="width:90px">
+              <span class="hint" style="margin:0">越大越靠前</span>
+            </div>
+          </div>
+        </div></div>`;
+    }).join('');
+  }
+  box.querySelectorAll('.item-head').forEach(h=>h.onclick=e=>{
+    if(e.target.closest('button')) return;
+    h.parentElement.classList.toggle('open');
+  });
+  box.querySelectorAll('[data-aifill]').forEach(b=>b.onclick=ev=>{
+    ev.stopPropagation(); aiFillWorldEntry(+b.dataset.aifill);
+  });
+  box.querySelectorAll('[data-toggle]').forEach(b=>b.onclick=ev=>{
+    ev.stopPropagation();
+    state.world[+b.dataset.toggle].enabled = !state.world[+b.dataset.toggle].enabled;
+    renderWorld(); save(); refreshInjectPreview();
+  });
+  box.querySelectorAll('[data-del]').forEach(b=>b.onclick=ev=>{
+    ev.stopPropagation();
+    if(!confirm('删除这条设定？')) return;
+    state.world.splice(+b.dataset.del,1); renderWorld(); save(); updateCounters(); refreshInjectPreview();
+  });
+  box.querySelectorAll('input,textarea').forEach(el=>{
+    const i=+el.dataset.i, f=el.dataset.f;
+    el.addEventListener('input',()=>{
+      if(f==='keys'||f==='secondary') state.world[i][f]=toKeys(el.value);
+      else if(f==='order') state.world[i][f]=+el.value||0;
+      else state.world[i][f]=el.value;
+      save(); updateCounters();
+    });
+    if(f==='constant') el.addEventListener('change',()=>{ state.world[i][f]=el.checked; renderWorld(); save(); refreshInjectPreview(); });
+  });
+  updateCounters();
+}
+function updateCounters(){
+  $('#nWorld').textContent = state.world.length?('('+state.world.length+')'):'';
+  $('#nChars').textContent = state.chars.length?('('+state.chars.length+')'):'';
+  const nO=$('#nWrite'); if(nO) nO.textContent = state.outline.length?('('+state.outline.length+')'):'';
+  $('#worldStat').textContent = state.world.length ? `${state.world.length} 条 · 常驻 ${state.world.filter(e=>e.constant).length} 条 · 启用 ${state.world.filter(e=>e.enabled).length} 条` : '';
+}
+
+/* 触发测试 */
+$('#btnTestTrigger').onclick = ()=>{
+  const idx = state.current;
+  const {included,matched,overflow} = buildWorldContext(idx);
+  const rows = included.map(e=>`<div class="item"><div class="item-head"><span class="badge ${e.constant?'on':'ok'}">${e.constant?'常驻':'命中'}</span>
+    <span class="nm">${esc(e.comment)}</span><div class="spacer"></div><span class="hint" style="margin:0">${e.content.length} 字</span></div>
+    <div class="hint" style="margin-top:6px">${esc(e.content.slice(0,160))}${e.content.length>160?'…':''}</div></div>`).join('') || '<div class="hint">本章没有任何条目被触发。</div>';
+  const miss = state.world.filter(e=>e.enabled&&!included.includes(e));
+  openDlg(`<h3>触发测试 · 第 ${idx+1} 章</h3>
+    <div class="hint">扫描范围：最近 ${state.settings.scan} 字（含本章梗概、上一章结尾、出场角色卡、待回收伏笔）</div>
+    <h3 style="margin-top:16px;font-size:14px">将被注入（${included.length} 条）</h3>${rows}
+    ${overflow.length?`<div class="warnbox">因超出 ${state.settings.budget} 字上限被截断：${overflow.map(e=>esc(e.comment)).join('、')}</div>`:''}
+    <h3 style="margin-top:16px;font-size:14px">未被触发（${miss.length} 条）</h3>
+    <div class="hint">${miss.slice(0,40).map(e=>esc(e.comment)).join('、')||'无'}</div>`,[{label:'关闭'}]);
+};
+$('#worldSearch').addEventListener('input',renderWorld);
+$('#btnAddWorld').onclick = ()=>{
+  state.world.unshift({id:uid(),comment:'新条目',keys:[],secondary:[],content:'',constant:false,enabled:true,order:100,linkedChar:null});
+  renderWorld(); save();
+  const first=$('#worldList .item'); if(first) first.classList.add('open');
+};
+$('#btnImportWorld').onclick=()=>$('#fileWorld').click();
+$('#fileWorld').onchange=e=>{ if(e.target.files.length) importWorldFiles(e.target.files); e.target.value=''; };
+$('#btnExportWorld').onclick=()=>{
+  if(!state.world.length){ toast('还没有条目'); return; }
+  download((state.meta.title||'world')+'.世界书.json', JSON.stringify(worldToST(),null,2),'application/json');
+  toast('已导出 SillyTavern 格式世界书');
+};
+
+/* =========================================================
+   角色卡（SillyTavern V1/V2/V3）
+   ========================================================= */
+function normChar(data, raw){
+  const d = (data && data.data) ? data.data : (data||{});
+  const cb = d.character_book || (raw && raw.character_book) || null;
+  let book = [];
+  if(cb && cb.entries){
+    const arr = Array.isArray(cb.entries)?cb.entries:Object.values(cb.entries);
+    book = arr.map(normWorldEntry);
+  }
+  return {
+    id: uid(),
+    name: d.name || '未命名角色',
+    avatar: '',
+    description: d.description || '',
+    personality: d.personality || '',
+    scenario: d.scenario || '',
+    speech: d.speech || (d.extensions && d.extensions.speech) || '',
+    example: d.mes_example || d.example_dialogue || '',
+    systemPrompt: d.system_prompt || '',
+    postHistory: d.post_history_instructions || '',
+    tags: toKeys(d.tags||[]),
+    from: 1, to: 9999, enabled: true,
+    _book: book,
+    _raw: data || {}
+  };
+}
+/* 图片转小尺寸 dataURL（持久保存，避免 blob URL 刷新后失效） */
+function fileToAvatar(file, max){
+  return new Promise(resolve=>{
+    const url=URL.createObjectURL(file);
+    const img=new Image();
+    img.onload=()=>{
+      const m=max||160;
+      const s=Math.min(1, m/Math.max(img.width,img.height));
+      const cv=document.createElement('canvas');
+      cv.width=Math.max(1,Math.round(img.width*s)); cv.height=Math.max(1,Math.round(img.height*s));
+      cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+      URL.revokeObjectURL(url);
+      resolve(cv.toDataURL('image/jpeg',0.82));
+    };
+    img.onerror=()=>{ URL.revokeObjectURL(url); resolve(''); };
+    img.src=url;
+  });
+}
+async function readPngCard(file){
+  const buf = new Uint8Array(await file.arrayBuffer());
+  const dec = new TextDecoder('utf-8');
+  let p = 8, found = {};
+  const sig = [137,80,78,71,13,10,26,10];
+  for(let i=0;i<8;i++) if(buf[i]!==sig[i]) throw new Error('不是有效的 PNG 文件');
+  while(p < buf.length - 8){
+    const len = (buf[p]<<24)|(buf[p+1]<<16)|(buf[p+2]<<8)|buf[p+3];
+    const type = String.fromCharCode(buf[p+4],buf[p+5],buf[p+6],buf[p+7]);
+    const data = buf.slice(p+8, p+8+len);
+    if(type==='tEXt'){
+      const z = data.indexOf(0);
+      const kw = dec.decode(data.slice(0,z));
+      const val = dec.decode(data.slice(z+1));
+      if(kw==='chara' || kw==='ccv3') found[kw]=val;
+    } else if(type==='iTXt'){
+      let q = data.indexOf(0);
+      const kw = dec.decode(data.slice(0,q));
+      q++;
+      const compFlag = data[q]; q++;
+      q++; // compression method
+      let s = data.indexOf(0,q); const lang = dec.decode(data.slice(q,s)); s++;
+      let t2 = data.indexOf(0,s); const translated = dec.decode(data.slice(s,t2)); s++;
+      let txt = data.slice(s);
+      if(compFlag===1 && typeof DecompressionStream==='function'){
+        try{
+          const ds = new DecompressionStream('deflate');
+          const stream = new Blob([txt]).stream().pipeThrough(ds);
+          txt = new Uint8Array(await new Response(stream).arrayBuffer());
+        }catch(err){ console.warn('inflate failed',err); }
+      }
+      if(kw==='chara'||kw==='ccv3') found[kw]=dec.decode(txt);
+    }
+    if(type==='IEND') break;
+    p += 12 + len;
+  }
+  const pick = found.ccv3 || found.chara;
+  if(!pick) throw new Error('PNG 中未找到内嵌角色卡数据');
+  return b64ToJson(pick);
+}
+/* base64 → UTF-8 文本 → JSON（必须按 UTF-8 解码，否则中文会乱码） */
+function b64ToJson(b64){
+  const bin = atob(String(b64).replace(/\s/g,''));
+  const bytes = new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
+  return JSON.parse(new TextDecoder('utf-8').decode(bytes));
+}
+async function importCharFiles(files){
+  for(const f of files){
+    try{
+      let json, avatar='';
+      if(/\.png$/i.test(f.name)){
+        json = await readPngCard(f);
+        avatar = await fileToAvatar(f, 160);
+      } else {
+        json = JSON.parse(await f.text());
+        if(Array.isArray(json)){  // 多个角色
+          json.forEach(j=>addChar(normChar(j)));
+          toast(`已导入 ${f.name}：多个角色`); renderChars(); save(); continue;
+        }
+      }
+      const c = normChar(json);
+      c.avatar = avatar;
+      addChar(c);
+      let extra='';
+      if(c._book.length){
+        c._book.forEach(e=>{ e.linkedChar=c.id; state.world.push(e); });
+        extra = `，并导入内嵌世界书 ${c._book.length} 条`;
+        renderWorld();
+      }
+      toast(`已导入角色：${c.name}${extra}`);
+    }catch(e){ console.error(e); toast('导入失败：'+f.name+'（'+e.message+'）'); }
+  }
+  renderChars(); save(); updateCounters();
+}
+function addChar(c){ state.chars.push(c); }
+function charBookOf(id){ return state.world.filter(e=>e.linkedChar===id); }
+function renderChars(){
+  const box=$('#charList');
+  if(!state.chars.length){
+    box.innerHTML='<div class="empty" style="grid-column:1/-1">还没有角色卡。<br>点「导入角色卡」上传 SillyTavern 的 PNG 角色卡或 JSON，也可以「新建角色」手填。</div>';
+  } else {
+    box.innerHTML = state.chars.map((c,i)=>{
+      const book=charBookOf(c.id);
+      return `<div class="charcard ${c.enabled?'':'off'}" data-i="${i}">
+        <div class="charhead">
+          <div class="avatar">${c.avatar?`<img src="${c.avatar}" alt="">`:esc((c.name||'?')[0])}</div>
+          <div style="flex:1;min-width:0">
+            <input type="text" data-i="${i}" data-f="name" value="${esc(c.name)}" placeholder="角色名"
+              style="background:transparent;border:1px solid transparent;font-weight:700;font-size:15px;padding:2px 4px">
+            <div style="margin-top:4px" class="toolbar">
+              ${(c.tags||[]).slice(0,5).map(t=>`<span class="badge">${esc(t)}</span>`).join('')}
+              ${book.length?`<span class="badge ok">内嵌世界书 ${book.length}</span>`:''}
+            </div>
+          </div>
+          <button class="btn xs ghost" data-img="${i}" title="更换头像">头像</button>
+          <button class="btn xs ghost" data-exp="${i}">导出</button>
+          <button class="btn xs ghost danger" data-del="${i}">✕</button>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div><label style="margin-top:0">出场章节 从</label><input type="number" data-i="${i}" data-f="from" value="${c.from}" min="1"></div>
+          <div><label style="margin-top:0">到（9999 = 直到结局）</label><input type="number" data-i="${i}" data-f="to" value="${c.to}" min="1"></div>
+        </div>
+        <label class="switch" style="margin-top:8px"><input type="checkbox" data-i="${i}" data-f="enabled" ${c.enabled?'checked':''}> 启用该角色卡</label>
+        <div class="toolbar" style="margin-top:6px">
+          <button class="btn xs" data-aifillc="${i}">✦ AI 补全设定</button>
+          <button class="btn xs ghost" data-toggle="${i}">▾ 展开 / 收起详细设定</button>
+        </div>
+        <div class="item-body ${''}" id="cbody-${i}">
+          <label>身份与简介</label><textarea data-i="${i}" data-f="description" style="min-height:80px">${esc(c.description)}</textarea>
+          <label>性格</label><textarea data-i="${i}" data-f="personality" style="min-height:60px">${esc(c.personality)}</textarea>
+          <label>说话风格 / 口癖</label><textarea data-i="${i}" data-f="speech" style="min-height:56px">${esc(c.speech)}</textarea>
+          <label>当前处境 / 与主角关系</label><textarea data-i="${i}" data-f="scenario" style="min-height:60px">${esc(c.scenario)}</textarea>
+          <label>示例对话</label><textarea data-i="${i}" data-f="example" style="min-height:70px">${esc(c.example)}</textarea>
+          <label>专属系统提示（可选）</label><textarea data-i="${i}" data-f="systemPrompt" style="min-height:56px">${esc(c.systemPrompt)}</textarea>
+        </div>
+      </div>`;
+    }).join('');
+  }
+  box.querySelectorAll('[data-aifillc]').forEach(b=>b.onclick=()=>aiFillChar(+b.dataset.aifillc));
+  box.querySelectorAll('[data-toggle]').forEach(b=>b.onclick=()=>{
+    const el=$('#cbody-'+b.dataset.toggle); el.style.display = el.style.display==='block'?'none':'block';
+  });
+  box.querySelectorAll('[data-img]').forEach(b=>b.onclick=()=>{
+    const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*';
+    inp.onchange=async()=>{
+      if(!inp.files[0]) return;
+      state.chars[+b.dataset.img].avatar = await fileToAvatar(inp.files[0], 160);
+      renderChars(); save(); toast('头像已更新');
+    };
+    inp.click();
+  });
+  box.querySelectorAll('[data-exp]').forEach(b=>b.onclick=()=>exportChar(+b.dataset.exp));
+  box.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{
+    const i=+b.dataset.del;
+    if(!confirm('删除角色「'+state.chars[i].name+'」？绑定的世界书条目会保留在「世界观」中。')) return;
+    state.chars.splice(i,1); renderChars(); save(); updateCounters();
+  });
+  box.querySelectorAll('input,textarea').forEach(el=>{
+    const i=+el.dataset.i, f=el.dataset.f;
+    const handler=()=>{
+      if(f==='from'||f==='to') state.chars[i][f]=Math.max(1,+el.value||1);
+      else if(f==='enabled') state.chars[i][f]=el.checked;
+      else state.chars[i][f]=el.value;
+      save(); refreshInjectPreview();
+    };
+    el.addEventListener('input',handler); el.addEventListener('change',handler);
+  });
+  $('#charStat').textContent = state.chars.length ? `${state.chars.length} 张卡 · 启用 ${state.chars.filter(c=>c.enabled).length} 张` : '';
+}
+function exportChar(i){
+  const c=state.chars[i];
+  const out={
+    spec:'chara_card_v2', spec_version:'2.0',
+    data:{
+      name:c.name, description:c.description, personality:c.personality, scenario:c.scenario,
+      first_mes:(c._raw&&c._raw.data&&c._raw.data.first_mes)||'',
+      mes_example:c.example, creator_notes:'由墨砚导出', system_prompt:c.systemPrompt,
+      post_history_instructions:c.postHistory||'', alternate_greetings:[], tags:c.tags,
+      creator:'', character_version:'1.0', extensions:{}
+    }
+  };
+  if(c.speech) out.data.description = (out.data.description?out.data.description+'\n':'')+'【说话风格】'+c.speech;
+  download(c.name+'.card.json', JSON.stringify(out,null,2),'application/json');
+  toast('已导出角色卡 '+c.name);
+}
+$('#btnImportChar').onclick=()=>$('#fileChar').click();
+$('#fileChar').onchange=e=>{ if(e.target.files.length) importCharFiles(e.target.files); e.target.value=''; };
+$('#btnAddChar').onclick=()=>{
+  addChar({id:uid(),name:'新角色',avatar:'',description:'',personality:'',scenario:'',speech:'',example:'',
+    systemPrompt:'',postHistory:'',tags:[],from:1,to:9999,enabled:true,_book:[],_raw:{}});
+  renderChars(); save(); updateCounters();
+  const last=$('#charList .charcard:last-child'); if(last) last.scrollIntoView({behavior:'smooth',block:'center'});
+};
+
+/* =========================================================
+   世界书命中引擎
+   ========================================================= */
+function activeCharsFor(idx){
+  const n = idx+1;
+  return state.chars.filter(c=>c.enabled && n>=c.from && n<=c.to);
+}
+function buildScanText(idx){
+  const parts=[];
+  const cur = state.outline[idx];
+  if(cur) parts.push(cur.title+' '+cur.summary);
+  const prev = state.outline[idx-1];
+  if(prev) parts.push(prev.title+' '+prev.summary);
+  const prevText = (state.chapters[idx-1]&&state.chapters[idx-1].content)||'';
+  parts.push(prevText.slice(-state.settings.scan));
+  parts.push((state.chapters[idx]&&state.chapters[idx].content)||'');
+  activeCharsFor(idx).forEach(c=>parts.push([c.name,c.description,c.personality,c.scenario,c.speech].join(' ')));
+  parts.push(state.meta.extra||'');
+  return parts.join('\n');
+}
+function keyHit(key, text, caseSensitive){
+  if(!key) return false;
+  const k = caseSensitive?key:key.toLowerCase();
+  const t = caseSensitive?text:text.toLowerCase();
+  return t.includes(k);
+}
+function buildWorldContext(idx){
+  const text = buildScanText(idx);
+  const pool = state.world.filter(e=>e.enabled && e.content.trim());
+  const included=[], overflow=[], candidates=[];
+  pool.forEach(e=>{
+    if(e.constant){ included.push(e); return; }
+    const cs = !!(e._raw&&e._raw.caseSensitive);
+    const hit = e.keys.some(k=>keyHit(k,text,cs));
+    if(!hit) return;
+    if(e.secondary.length && !e.secondary.every(k=>keyHit(k,text,cs))) return;
+    const score = e.keys.filter(k=>keyHit(k,text,cs)).join('').length + Math.log10(Math.max(1,e.order)+1)*3;
+    candidates.push({e,score});
+  });
+  // 绑定角色的世界书：角色出场即注入
+  const inChars = activeCharsFor(idx).map(c=>c.id);
+  const bound = [];
+  candidates.forEach(c=>{ if(c.e.linkedChar && inChars.includes(c.e.linkedChar)) c.score += 5; });
+  candidates.sort((a,b)=> b.score-a.score || b.e.order-a.e.order);
+  let used = included.reduce((s,e)=>s+e.content.length,0);
+  const budget = state.settings.budget;
+  candidates.forEach(c=>{
+    if(used + c.e.content.length <= budget){ included.push(c.e); used += c.e.content.length; }
+    else overflow.push(c.e);
+  });
+  // 常驻条目按 order 排序，其余保持命中优先级
+  const matched = included.filter(e=>!e.constant);
+  return {included, matched, overflow};
+}
+function worldBlock(idx){
+  const {included} = buildWorldContext(idx);
+  if(!included.length) return '';
+  return '【世界观设定（必须严格遵守，不得违背）】\n' +
+    included.slice().sort((a,b)=>b.order-a.order)
+      .map(e=>`◆ ${e.comment}：${e.content}`).join('\n');
+}
+function charBlock(idx){
+  const list = activeCharsFor(idx);
+  if(!list.length) return '';
+  return '【本章登场角色】\n' + list.map(c=>{
+    const seg=[`◆ ${c.name}`];
+    if(c.description) seg.push('身份：'+c.description);
+    if(c.personality) seg.push('性格：'+c.personality);
+    if(c.speech) seg.push('说话风格：'+c.speech);
+    if(c.scenario) seg.push('当前处境/关系：'+c.scenario);
+    if(c.example) seg.push('对话示例：\n'+c.example);
+    if(c.systemPrompt) seg.push('该角色专属要求：'+c.systemPrompt);
+    return seg.join('\n');
+  }).join('\n\n');
+}
+
+/* =========================================================
+   【已移除】故事大纲模块
+   现在章节只作为「章节清单」使用：标题 + 本章梗概 + 正文。
+   旧项目中的 outline.summary 仍会被读取（作为本章既定梗概）。
+   ========================================================= */
+function renderOutline(){ updateCounters(); }
+function renderChaptersLight(){}
+/* 删除某一章（连同正文、聊天、摘要） */
+function deleteChapter(i){
+  state.outline.splice(i,1);
+  state.chapters.splice(i,1);
+  // 伏笔记录跟着章节走，避免指向已经不存在的章
+  ensureHooks().forEach(h=>{
+    if(h.plant===i && h.status==='open'){ h.plant=null; h.plants=[]; h.note='（原埋设章节已删除）'; }
+    else if(h.plant!=null && h.plant>i){ h.plant--; if(Array.isArray(h.plants)) h.plants=h.plants.map(x=>x>i?x-1:x); }
+    if(h.resolve===i){ h.status='open'; h.resolve=null; }
+    else if(h.resolve!=null && h.resolve>i) h.resolve--;
+  });
+  if(state.current>=state.outline.length) state.current=Math.max(0,state.outline.length-1);
+  if(readIdx>=state.outline.length) readIdx=Math.max(0,state.outline.length-1);
+  renderChapters(); renderTOC(); renderChat(); renderHooks(); save(); updateCounters();
+}
+/* 移动章节顺序 */
+function moveChapter(i,dir){
+  const j=i+dir;
+  if(j<0||j>=state.outline.length) return;
+  [state.outline,state.chapters].forEach(a=>{ const t=a[j]; a[j]=a[i]; a[i]=t; });
+  ensureHooks().forEach(h=>{
+    if(h.plant===i) h.plant=j; else if(h.plant===j) h.plant=i;
+    if(h.resolve===i) h.resolve=j; else if(h.resolve===j) h.resolve=i;
+  });
+  state.current=j; if(readIdx===i) readIdx=j; else if(readIdx===j) readIdx=i;
+  renderChapters(); renderTOC(); renderChat(); renderHooks(); save();
+}
+
+function parseLoose(text){
+  let t=String(text||'').trim().replace(/^```(?:json)?/i,'').replace(/```$/,'').trim();
+  const a=t.indexOf('['), b=t.lastIndexOf(']');
+  const c=t.indexOf('{'), d=t.lastIndexOf('}');
+  if(a>=0&&b>a&&(c<0||a<c)){ try{ return JSON.parse(t.slice(a,b+1)); }catch(_){} }
+  if(c>=0&&d>c){ try{ return JSON.parse(t.slice(c,d+1)); }catch(_){} }
+  return null;
+}
+/* =========================================================
+   章节与写作
+   ========================================================= */
+function renderChapters(){
+  const box=$('#chapterList');
+  if(!state.outline.length){
+    box.innerHTML='<div class="hint" style="padding:10px">还没有章节。<br>点下面按钮直接开写。</div>'
+      + `<button class="btn sm" id="btnSideNew" style="margin-top:8px">＋ 新建一章</button>`;
+    const b0=$('#btnSideNew'); if(b0) b0.onclick=()=>$('#btnTocNew').click();
+    syncEditor(); return;
+  }
+  box.innerHTML = state.outline.map((c,i)=>{
+    const ch=state.chapters[i]||{};
+    const n=(ch.content||'').replace(/\s/g,'').length;
+    return `<div class="ch ${i===state.current?'active':''}" data-i="${i}">
+      <div class="chrowwrap">
+        <div class="chmain" data-i="${i}">
+          <b>第${i+1}章 ${esc(c.title||ch.title||'')}${ch.committed?'　<span style="font-size:10px;color:var(--ok)">✓已编入</span>':''}</b>
+          <span>${n?n+' 字':'未写'}</span>
+        </div>
+        <div class="chacts">
+          <i data-up="${i}" title="上移">↑</i>
+          <i data-down="${i}" title="下移">↓</i>
+          <i class="del" data-del="${i}" title="删除这一章">✕</i>
+        </div>
+      </div>
+    </div>`;
+  }).join('') + `<button class="btn sm" id="btnSideNew" style="margin-top:8px">＋ 新建一章</button>`;
+  box.querySelectorAll('.chmain').forEach(b=>b.onclick=()=>{
+    state.current=+b.dataset.i; readIdx=state.current; renderChapters(); renderChat();
+    if($('#sub-toc') && $('#sub-toc').style.display!=='none') renderTOC();
+  });
+  box.querySelectorAll('[data-del]').forEach(b=>b.onclick=e=>{
+    e.stopPropagation();
+    const i=+b.dataset.del;
+    const has=((state.chapters[i]||{}).content||'').trim();
+    if(!confirm(`删除第 ${i+1} 章？${has?'\n该章正文（'+has.replace(/\s/g,'').length+' 字）会一并删除，无法恢复。':''}`)) return;
+    deleteChapter(i); toast('第 '+(i+1)+' 章已删除');
+  });
+  box.querySelectorAll('[data-up]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); moveChapter(+b.dataset.up,-1); });
+  box.querySelectorAll('[data-down]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); moveChapter(+b.dataset.down,1); });
+  const bn=$('#btnSideNew'); if(bn) bn.onclick=()=>$('#btnTocNew').click();
+  const hint=$('#chapterHint');
+  if(hint) hint.textContent = state.outline.length ? `第 ${state.current+1} / ${state.outline.length} 章` : '';
+  syncEditor();
+}
+function syncEditor(){
+  const i=state.current, ch=state.chapters[i]||{}, ol=state.outline[i]||{};
+  $('#chapterTitle').value = ch.title || ol.title || '';
+  $('#content').value = ch.content || '';
+  updateCount(); refreshInjectPreview();
+}
+function updateCount(){
+  const n=$('#content').value.replace(/\s/g,'').length;
+  $('#wordCount').textContent=n.toLocaleString()+' 字';
+}
+/* 已废弃：旧版 ensureChapter 已由下方统一版本取代 */
+function ensureChapterLegacy(){}
+$('#chapterTitle').addEventListener('input',e=>{
+  ensureChapter(state.current).title=e.target.value;
+  if(state.outline[state.current]) state.outline[state.current].title=e.target.value;
+  save(); renderChapters();
+});
+$('#content').addEventListener('input',e=>{
+  ensureChapter(state.current).content=e.target.value;
+  updateCount(); save(); renderOutline();
+});
+function refreshInjectPreview(){
+  const el=$('#injectPreview'); if(!el) return;
+  if(!state.outline.length){ el.textContent=''; return; }
+  const {included}=buildWorldContext(state.current);
+  const cs=activeCharsFor(state.current);
+  const cm=committedCount();
+  const oh=openHooks().length;
+  const risky=openHooks().filter(h=>{ const a=hookAge(h); return a!=null&&a>=15; }).length;
+  el.innerHTML = `本章将注入：<span class="badge on">${included.length} 条世界观</span> <span class="badge on">${cs.length} 张角色卡</span>`
+    + (oh?` <span class="badge ${risky?'warn':'on'}">🪝 ${oh} 条待回收伏笔${risky?('，其中 '+risky+' 条超 15 章'):''}</span>`:'')
+    + (cm?`　<span class="badge ok">已编入目录 ${cm} 章</span>`:'　<span class="badge">尚无已编入章节</span>');
+}
+
+/* 提示词拼装 */
+function metaBlock(){
+  const m=state.meta;
+  let s=`【书名】${m.title||'未定'}\n【类型】${m.genre}　【视角】${m.pov}　【单章篇幅】${m.words}`;
+  if(m.mainline) s+=`\n【主线与结局】${m.mainline}`;
+  if(m.extra) s+=`\n【补充设定】${m.extra}`;
+  return s;
+}
+function styleBlock(){
+  const r=state.rules; let s='';
+  if(r.style) s+='【文风要求】\n'+r.style+'\n';
+  if(r.sample) s+='【文风样例（请模仿其节奏、句长与用词，勿照抄内容）】\n'+r.sample+'\n';
+  if(r.rules) s+='【写作法则】\n'+r.rules+'\n';
+  if(r.banned) s+='【禁止出现的词/表达】'+r.banned.replace(/\n/g,'、')+'\n';
+  return s;
+}
+
+/* =========================================================
+   故事记忆：摘要 · 压缩 · 上下文打包
+   ========================================================= */
+function ensureMem(){
+  if(!state.memory) state.memory={};
+  const m=state.memory;
+  if(m.limit==null) m.limit=24000;
+  if(m.keepFull==null) m.keepFull=1;
+  if(m.auto==null) m.auto=true;
+  if(m.rolling==null) m.rolling='';
+  if(m.trackedUpto==null) m.trackedUpto=0;
+  if(!state.suggest) state.suggest={};
+  ['cover','autoWrite','on'].forEach(k=>{ if(state.suggest[k]==null) state.suggest[k]=true; });
+  if(state.suggest.count==null) state.suggest.count=3;
+  return m;
+}
+const estTokens = t => { const n = (typeof t==='number'? t : String(t||'').length); return Math.round(n/1.4); };
+function bigrams(s){
+  const t=String(s||'').replace(/[^\u4e00-\u9fa5a-zA-Z0-9]/g,'');
+  const set=new Set();
+  for(let i=0;i<t.length-1;i++) set.add(t.slice(i,i+2));
+  return set;
+}
+function overlap(q,doc){
+  const A=bigrams(q),B=bigrams(doc);
+  if(!A.size) return 0;
+  let n=0; A.forEach(x=>{ if(B.has(x)) n++; });
+  return n/A.size;
+}
+function splitPoints(gist){
+  return String(gist||'').split(/[\n；;。]+/)
+    .map(s=>s.replace(/^\s*[-*·•\d.、)）]+/,'').trim())
+    .filter(s=>s.length>1);
+}
+/* 单章摘要（写作时按需注入） */
+async function summarizeChapter(i,force){
+  const ch=state.chapters[i];
+  if(!ch||!ch.content||ch.content.replace(/\s/g,'').length<50) return null;
+  if(ch.summary && !force) return ch.summary;
+  const sys='你是小说资料管理员，擅长用极简精确的语言记录剧情要点，供作者后续核对连续性。';
+  const user=`请为下面这一章写一份“后续写作时用来保持一致”的剧情摘要。
+要求：
+- 摘要部分 300 字以内，按时间顺序：谁做了什么、关键决定与对话结果、地点变化、获得或失去的东西
+- 再按下面的固定格式输出四个区块，一个都不能少，没有内容就写“无”：
+
+【人物】本章出场且状态发生变化的角色（写了谁、变成什么样）
+【伏笔埋设】本章埋下的钩子/悬念/未解答的疑问，一行一条，每条开头用“- ”
+【伏笔回收】本章解释或结算了的旧疑问，一行一条，每条开头用“- ”
+【设定】本章新出现或强化的世界观设定
+
+- 伏笔只写“什么东西、什么疑问”，10-30 字，不要写评价
+- 只输出摘要本身，不要客套
+
+第${i+1}章《${(state.outline[i]&&state.outline[i].title)||ch.title||''}》正文：
+${ch.content}`;
+  const out=await chat([{role:'system',content:sys},{role:'user',content:user}]);
+  ch.summary=String(out||'').trim();
+  // 用新摘要覆盖这一章旧的伏笔记录（重写/重生后不会留下过期的钩子）
+  state.hooks=ensureHooks().filter(h=>!(h.src==='summary' && h.plant===i));
+  ensureHooks().forEach(h=>{ if(h.src==='summary' && h.status!=='open' && h.resolve===i){ h.status='open'; h.resolve=null; } });
+  save(); syncHooksFromSummary(i,ch.summary); return ch.summary;
+}
+/* 把最早的若干章摘要合并进「前情总纲」 */
+async function compressMemory(force,idx){
+  const m=ensureMem();
+  const at = (idx==null? state.current : idx);
+  const keepFull=Math.max(0,m.keepFull||0);
+  const upto=Math.max(0, Math.min(at, state.chapters.filter(c=>c&&c.content).length) - keepFull - 1);
+  const lines=[];
+  for(let i=m.trackedUpto;i<upto;i++){
+    const s=state.chapters[i]&&state.chapters[i].summary;
+    if(s) lines.push(`第${i+1}章：${s}`);
+  }
+  if(lines.length<2 && !force) return false;
+  if(!lines.length) return false;
+  const sys='你是小说资料管理员，擅长把多章摘要压缩成高度凝练的“前情总纲”，不丢失任何影响后续连贯性的信息。';
+  const user=`请把下面的章节摘要合并为一份不超过 800 字的前情总纲。
+必须保留：人物关系变化、身份与能力变化、未回收的伏笔、重要地点与组织、时间线推进。
+可以舍弃：具体对话措辞、场景描写、一次性出场的次要角色。
+用连贯的叙述写，不要分条列举。
+
+${m.rolling?('【已有前情总纲，请与新材料合并】\n'+m.rolling+'\n\n'):''}【需要并入的章节摘要】
+${lines.join('\n')}`;
+  const out=await chat([{role:'system',content:sys},{role:'user',content:user}]);
+  m.rolling=String(out||'').trim();
+  m.trackedUpto=upto;
+  save(); return true;
+}
+/* =========================================================
+   伏笔追踪
+   state.hooks = [{id,text,plant,status,resolve,note,src,manual}]
+   ========================================================= */
+function ensureHooks(){ if(!Array.isArray(state.hooks)) state.hooks=[]; return state.hooks; }
+function hookSimilar(a,b){
+  const A=bigrams(a), B=bigrams(b);
+  if(!A.size||!B.size) return 0;
+  let n=0; A.forEach(x=>{ if(B.has(x)) n++; });
+  return n/Math.min(A.size,B.size);
+}
+/* 相似度：把「双字组合重合」与「单字重合」混合，更能识别改写过的一句话 */
+function hookScore(a,b){
+  const A=bigrams(a), B=bigrams(b);
+  if(!A.size||!B.size) return 0;
+  let n=0; A.forEach(x=>{ if(B.has(x)) n++; });
+  const bg=n/Math.min(A.size,B.size);
+  const clean=s=>String(s).replace(/[^\u4e00-\u9fa5A-Za-z0-9]/g,'');
+  const ca=new Set(clean(a)), cb=new Set(clean(b));
+  let m=0; ca.forEach(c=>{ if(cb.has(c)) m++; });
+  const mnc=Math.min(ca.size,cb.size);
+  const co=mnc? m/mnc : 0;
+  return 0.6*bg+0.4*co;
+}
+/* 是否视为同一条伏笔：短句要求更严，长句容错宽 */
+function isSameHook(a,b){
+  const mn=Math.min(bigrams(a).size, bigrams(b).size);
+  const s=hookScore(a,b);
+  if(mn>=8) return s>=0.42;
+  if(mn>=6) return s>=0.36;
+  if(mn>=5) return s>=0.55;
+  return s>=0.85;
+}
+function cleanHookText(t){
+  return String(t||'').replace(/^\s*[-*·•\d.、)）]+\s*/,'').replace(/^【[^】]*】/,'').replace(/[。；;，,]+$/,'').trim();
+}
+function addHook(text,plant,src){
+  text=cleanHookText(text);
+  if(text.length<3) return null;
+  if(/^(无|暂无|没有|（无）|\(无\))/.test(text)) return null;
+  const list=ensureHooks();
+  const dup=list.find(h=>h.status==='open' && isSameHook(h.text,text));
+  if(dup){
+    if(plant!=null){
+      if(!Array.isArray(dup.plants)) dup.plants = (dup.plant==null?[]:[dup.plant]);
+      if(dup.plants.indexOf(plant)<0) dup.plants.push(plant);
+      if(dup.plant==null) dup.plant=plant;
+    }
+    return dup;
+  }
+  const h={id:'h'+Math.random().toString(36).slice(2,9), text, plant:(plant==null?null:plant), plants:(plant==null?[]:[plant]),
+    status:'open', resolve:null, note:'', src:src||'', manual:false, created:Date.now()};
+  list.push(h); return h;
+}
+function closeHookByText(text,chapter){
+  text=cleanHookText(text);
+  if(text.length<3) return null;
+  const list=ensureHooks();
+  let best=null,bs=0;
+  list.forEach(h=>{ if(h.status!=='open') return; const s=hookSimilar(h.text,text); if(s>bs){bs=s;best=h;} });
+  if(best&&isSameHook(best.text,text)){ best.status='closed'; best.resolve=chapter; save(); return best; }
+  list.push({id:'h'+Math.random().toString(36).slice(2,9), text, plant:null, plants:[], status:'closed',
+    resolve:chapter, note:'（第 '+(chapter+1)+' 章的摘要提到它已被回收，但未找到对应埋设记录）', src:'', manual:false, created:Date.now()});
+  return null;
+}
+/* 从章节摘要里抽取伏笔（兼容新旧两种格式） */
+function parseHooksFromSummary(summary){
+  const s=String(summary||'');
+  const grab=(tag)=>{
+    const m=s.match(new RegExp('【'+tag+'】([\\s\\S]*?)(?=\\n【|$)'));
+    if(!m) return [];
+    return m[1].split(/[\n；;]+/).map(cleanHookText).filter(x=>x.length>=3);
+  };
+  let planted=grab('伏笔埋设'), resolved=grab('伏笔回收');
+  if(!planted.length && !resolved.length){
+    const old=grab('伏笔');   // 旧格式：两类混在一起
+    old.forEach(x=>{ (/回收|已解|解释清楚|真相大白|揭晓/.test(x)?resolved:planted).push(x); });
+  }
+  return {planted,resolved};
+}
+function syncHooksFromSummary(i,summary){
+  const {planted,resolved}=parseHooksFromSummary(summary);
+  if(!planted.length && !resolved.length) return;
+  // 先登记本章新埋的（这样“同章埋、同章收”的情况也能正确挂上）
+  planted.forEach(t=>addHook(t,i,'summary'));
+  resolved.forEach(t=>closeHookByText(t,i));
+  save(); renderHooks(); updateHookBadge();
+}
+function openHooks(){ return ensureHooks().filter(h=>h.status==='open'); }
+function hookAge(h,at){
+  const base=(at==null? state.current : at);
+  const p=(h.plant==null?null:h.plant);
+  return p==null?null:Math.max(0, base-p);
+}
+function hookLabel(h){
+  if(h.plant==null) return '埋设章不明';
+  return '埋于第 '+(h.plant+1)+' 章';
+}
+function updateHookBadge(){
+  const el=$('#nHook'); if(!el) return;
+  const n=openHooks().length;
+  el.textContent = n?('('+n+')'):'';
+}
+function renderHooks(){
+  const box=$('#hookList'); if(!box) return;
+  const all=ensureHooks();
+  const f=(hookFilter||'open');
+  let list=all.slice();
+  if(f==='open') list=list.filter(h=>h.status==='open');
+  if(f==='closed') list=list.filter(h=>h.status!=='open');
+  list.sort((a,b)=>{
+    if(a.status!==b.status) return a.status==='open'?-1:1;
+    return (a.plant==null?1e9:a.plant)-(b.plant==null?1e9:b.plant);
+  });
+  const open=openHooks().length, closed=all.filter(h=>h.status!=='open').length;
+  const st=$('#hookStat');
+  if(st) st.textContent = all.length? `共 ${all.length} 条 · 未回收 ${open} 条 · 已回收 ${closed} 条` : '';
+  if(!list.length){
+    box.innerHTML='<div class="empty">'+(all.length?'这个分类下没有伏笔。':'还没有伏笔记录。<br>每章写完会自动从摘要里抽取；也可以点「✦ 扫描全书识别伏笔」补搾。')+'</div>';
+    updateHookBadge(); return;
+  }
+  box.innerHTML=list.map(h=>{
+    const age=hookAge(h);
+    const risky=h.status==='open'&&age!=null&&age>=15;
+    return `<div class="hookrow ${h.status==='open'?'':'closed'}" data-id="${h.id}">
+      <span class="hookstat ${h.status==='open'?'open':'closed'}">${h.status==='open'?'未回收':'已回收'}</span>
+      <div class="ht">
+        <div class="hrowtext">${esc(h.text)}</div>
+        <div class="hm">
+          ${hookLabel(h)}
+          ${h.plant!=null?`　<span class="hookage ${risky?'':'ok'}">${age?('已过 '+age+' 章'):'本章埋设'}</span>`:''}
+          ${h.status!=='open'&&h.resolve!=null?`　回收于第 ${h.resolve+1} 章`:''}
+          ${h.manual?'　· 手动添加':''}
+          ${h.note?`　· ${esc(h.note)}`:''}
+        </div>
+      </div>
+      <div class="hookacts">
+        ${h.status==='open'
+          ? `<button class="btn xs" data-hook="close" data-id="${h.id}">标记已回收</button>`
+          : `<button class="btn xs ghost" data-hook="reopen" data-id="${h.id}">重新打开</button>`}
+        <button class="btn xs ghost" data-hook="edit" data-id="${h.id}">编辑</button>
+        ${h.plant!=null?`<button class="btn xs ghost" data-hook="goto" data-id="${h.id}">去第 ${h.plant+1} 章</button>`:''}
+        <button class="btn xs ghost danger" data-hook="del" data-id="${h.id}">删除</button>
+      </div>
+    </div>`;
+  }).join('');
+  updateHookBadge();
+}
+/* 未回收伏笔 → 注入写作上下文 */
+function hookBlock(idx){
+  const list=openHooks();
+  if(!list.length) return '';
+  const at=(idx==null? state.current : idx);
+  list.sort((a,b)=>((a.plant==null?1e9:a.plant)-(b.plant==null?1e9:b.plant)));
+  const pick=list.slice(0,12);
+  return '【待回收伏笔（作者追踪表，写作时必须顾及，不得与之矛盾）】\n'
+    + pick.map(h=>`- ${h.text}（${hookLabel(h)}${hookAge(h,at)?'，已过 '+hookAge(h,at)+' 章':''}）`).join('\n')
+    + (list.length>pick.length?`\n（另有 ${list.length-pick.length} 条未列出）`:'');
+}
+/* 让 AI 扫描全书重建伏笔表 */
+async function rescanHooks(){
+  const idxs=state.chapters.map((c,i)=>({c,i})).filter(x=>x.c&&x.c.content&&x.c.content.replace(/\s/g,'').length>200);
+  if(!idxs.length){ toast('还没有足够的正文可供扫描'); return; }
+  setBusy(true,'正在扫描第 1 / '+idxs.length+' 章…');
+  try{
+    // 清掉旧的非手动记录，重建
+    state.hooks=ensureHooks().filter(h=>h.manual);
+    for(let k=0;k<idxs.length;k++){
+      setBusy(true,`正在扫描第 ${k+1} / ${idxs.length} 章…`);
+      const {c,i}=idxs[k];
+      const sys='你是小说资料管理员，专门负责追跟伏笔。你只输出 JSON。';
+      const user=`读下面这一章，找出它**埋下的伏笔/悬念/未解答的疑问**，以及它**回收（解答）的旧伏笔**。
+判断标准：
+- “埋设”指本章出现了但本章未解释、需要后文交代的信息（物件去向、人物身份、异常现象、未完的承诺、被提及却未展开的事件）
+- “回收”指本章明确解释或结算了前面留下的疑问
+- 只写事实，不要评价文笔；没有就返回空数组
+- 每条 10-30 字，写清“什么东西、什么疑问”
+
+只输出 JSON，不要解释、不要代码块标记：
+{"planted":["……"],"resolved":["……"]}
+
+第${i+1}章《${(state.outline[i]&&state.outline[i].title)||c.title||''}》：
+${c.content.slice(0,6000)}`;
+      try{
+        const out=await chat([{role:'system',content:sys},{role:'user',content:user}]);
+        let t=String(out).trim().replace(/^```(?:json)?/i,'').replace(/```$/,'').trim();
+        const a=t.indexOf('{'),b=t.lastIndexOf('}'); if(a>=0&&b>a) t=t.slice(a,b+1);
+        const j=JSON.parse(t);
+        (Array.isArray(j.planted)?j.planted:[]).forEach(x=>addHook(x,i,'scan'));
+        (Array.isArray(j.resolved)?j.resolved:[]).forEach(x=>closeHookByText(x,i));
+      }catch(e){ console.warn('扫描第'+(i+1)+'章失败',e); }
+    }
+    save(); renderHooks();
+    toast('扫描完成：共 ' + ensureHooks().length + ' 条，其中未回收 ' + openHooks().length + ' 条');
+  }catch(e){ toast('扫描失败：'+e.message); }
+  finally{ setBusy(false); }
+}
+let hookFilter='open';
+
+/* 生成前：补齐摘要 + 超限则自动压缩 */
+async function ensureMemory(idx,gist){
+  const m=ensureMem();
+  if(!m.auto) return;
+  for(let i=0;i<idx;i++){
+    const ch=state.chapters[i];
+    if(ch&&ch.content && !ch.summary){
+      setBusy(true,`正在归纳第 ${i+1} 章要点…`);
+      try{ await summarizeChapter(i); }catch(e){ console.warn(e); }
+    }
+  }
+  let ctx=assembleContext(idx,gist);
+  let guard=0;
+  while(ctx.overflow && guard<4){
+    guard++;
+    setBusy(true,'上下文接近上限，正在归纳压缩…');
+    let did=false;
+    try{ did=await compressMemory(guard>1, idx); }catch(e){ console.warn(e); }
+    if(!did) break;
+    ctx=assembleContext(idx,gist);
+  }
+  renderSummaries(); return ctx;
+}
+/* 章节窗口：本章附近展开，远期仅列标题 */
+function outlineWindow(idx){
+  const all=state.outline;
+  if(!all.length) return '';
+  const from=Math.max(0,idx-2), to=Math.min(all.length-1,idx+8);
+  const lines=[];
+  if(from>0) lines.push(`（更早章节：${all.slice(0,from).map((c,i)=>`${i+1}.${c.title||''}`).join(' / ')}）`);
+  for(let i=from;i<=to;i++){
+    lines.push(`第${i+1}章 ${all[i].title||''}：${all[i].summary||''}${i===idx?'　← 【本章】':''}${i===idx+1?'　← 下一章':''}`);
+  }
+  if(to<all.length-1) lines.push(`（后续章节：${all.slice(to+1).map((c,i)=>`${to+2+i}.${c.title||''}`).join(' / ')}）`);
+  return '【已有章节安排（保持连续，不得与之矛盾）】\n'+lines.join('\n');
+}
+/* 关键词相关的旧章节 → 作为「相关回忆」注入
+   只检索已经折叠进「前情总纲」的早期章节，避免与单个章节摘要重复 */
+function findRelated(idx,gist){
+  const m=ensureMem();
+  const tracked=m.trackedUpto||0;
+  if(!tracked) return [];
+  const q=[(gist||'').trim() || ((state.outline[idx]&&state.outline[idx].summary)||'')].join(' ');
+  if(bigrams(q).size<6) return [];
+  const keepFull=Math.max(0,m.keepFull||0);
+  const res=[];
+  for(let i=0;i<Math.min(tracked, idx-keepFull);i++){
+    const ch=state.chapters[i];
+    if(!ch||!ch.content) continue;
+    const score=overlap(q,ch.content.slice(0,2000));
+    if(score>0.22) res.push({i,score,text:ch.content.slice(0,800)});
+  }
+  return res.sort((a,b)=>b.score-a.score).slice(0,2);
+}
+/* 按优先级打包上下文，装不下就降级/截断 */
+function assembleContext(idx,gistText){
+  const m=ensureMem();
+  const limit=Math.max(2000, m.limit||24000);
+  const items=[];
+  const P={goal:0,meta:1,chars:2,world:3,hook:3.5,recent:4,rolling:5,outline:6,related:7,sum:8};
+
+  items.push({key:'meta', disp:10, p:P.meta, text:metaBlock()});
+  const cb=charBlock(idx); if(cb) items.push({key:'chars', disp:20, p:P.chars, text:cb});
+  const wb=worldBlock(idx); if(wb) items.push({key:'world', disp:30, p:P.world, text:wb});
+  const hb=hookBlock(idx); if(hb) items.push({key:'hooks', disp:35, p:P.hook, text:hb});
+  if(m.rolling) items.push({key:'rolling', disp:40, p:P.rolling, text:'【前情总纲（早期剧情归纳，必须与之保持一致）】\n'+m.rolling});
+
+  const gist=(gistText||'').trim() || (state.outline[idx]&&state.outline[idx].summary) || '';
+  items.push({key:'goal', disp:90, p:P.goal,
+    text:'【本章梗概（必须逐点落地）】\n'+(gist||'（作者未提供，请按主线与世界观合理推进，但不得越过下一章的剧情）')});
+
+  const ol=outlineWindow(idx); if(ol) items.push({key:'outline', disp:50, p:P.outline, text:ol, trunc:true, keep:'head'});
+
+  findRelated(idx,gist).forEach((r,k)=>{
+    items.push({key:'rel'+r.i, disp:60+k, p:P.related+k, trunc:true, keep:'head',
+      text:`【相关回忆·第${r.i+1}章（与本章关键词高度相关，供参考）】\n${r.text}`});
+  });
+
+  const keepFull=Math.max(0,m.keepFull||0);
+  const tracked=m.trackedUpto||0;
+  let hasSum=false, canon=0;
+  for(let i=idx-1;i>=0;i--){
+    const ch=state.chapters[i]||{};
+    const dist=idx-1-i;
+    const isCanon=!!(ch.committed&&ch.content);
+    if(isCanon) canon++;
+    if(isCanon && dist<keepFull && ch.content){
+      items.push({key:'full'+i, disp:100+i, p:P.recent+dist, trunc:true, keep:'tail',
+        text:`【第${i+1}章 ${(state.outline[i]&&state.outline[i].title)||''}（已编入目录的正文，用于衔接，勿重复叙述）】\n${ch.content}`});
+    } else if(isCanon && ch.summary && i>=tracked){
+      hasSum=true;
+      items.push({key:'sum'+i, disp:100+i, p:P.sum+dist, trunc:false,
+        text:`第${i+1}章：${ch.summary}`});
+    } else if(ch.summary && i>=tracked){
+      // 未编入目录的草稿：排在后面，预算不够就最先被丢掉
+      items.push({key:'dsum'+i, disp:120+i, p:P.sum+6+dist, trunc:true, keep:'head',
+        text:`第${i+1}章（草稿，未编入目录，仅供参考、不得当作已发生的事实）：${ch.summary}`});
+    }
+  }
+  if(canon) items.push({key:'canonn', disp:96, p:P.sum-0.6,
+    text:`【正式进度】本书已有 ${canon} 章编入目录（定稿），以上已编入内容即为既成事实，本章必须与之衔接。`});
+  if(hasSum) items.push({key:'sumhead', disp:95, p:P.sum-0.5, text:'【前情摘要（越靠后越接近本章）】'});
+
+  items.sort((a,b)=>a.p-b.p);
+  let used=0; const kept=[], dropped=[];
+  for(const it of items){
+    if(!it.text) continue;
+    const len=it.text.length;
+    if(used+len<=limit){ kept.push(it); used+=len; continue; }
+    if(it.trunc){
+      const room=limit-used;
+      if(room>400){
+        const t = it.keep==='head' ? it.text.slice(0,room)+'…' : '…'+it.text.slice(-room);
+        kept.push(Object.assign({},it,{text:t})); used+=room; continue;
+      }
+    }
+    dropped.push(it);
+  }
+  kept.sort((a,b)=>a.disp-b.disp);
+  const text=kept.map(x=>x.text).join('\n\n');
+  const overflow=dropped.some(x=>/^(sum|rel|outline|full)/.test(x.key));
+  return {text, used, limit, dropped, overflow,
+    tokens:estTokens(used), limitTokens:estTokens(limit),
+    folded:m.trackedUpto||0};
+}
+/* 写作指令尾巴 */
+function tailBlock(idx,mode,gistText){
+  const nxt=state.outline[idx+1]
+    ? `下一章将写：${state.outline[idx+1].title}（${state.outline[idx+1].summary}）。本章结尾需要为此自然铺垫。`
+    : '本章是最后一章，需要完整收束。';
+  const words=String(state.meta.words||'2500 字左右').replace('左右','');
+  let task;
+  if(mode==='continue') task=`沿着下面的「已有正文」继续往下写第${idx+1}章，不要重复已有内容。`;
+  else if(mode==='rewrite') task=`重写第${idx+1}章，换一种切入角度与写法，梗概要点保持不变。`;
+  else if(mode==='expand') task=`在已有正文基础上扩写：保留全部既有情节与信息，只对场景、动作、对话、心理做补充，让篇幅与画面更饱满。`;
+  else if(mode==='polish') task=`润色已有正文：保留剧情与信息量，去掉翻译腔和 AI 腔，让句子更自然、更有画面感，不改变内容走向。`;
+  else task=`写出第${idx+1}章的正文。`;
+  return `
+【本次任务】${task}
+【衔接提示】${nxt}
+【写作方式——最高优先级】
+1. 「本章梗概」是作者写下的**硬性要求**，必须严格照着写：
+   - 梗概里出现的人物、动作、对话内容、物件、地点、时间、先后顺序，必须在正文中原样呈现，不得改动、替换、省略或合并
+   - 梗概提到“某人说了什么”，正文就要写那个人说出那个意思；提到“发生了什么”，正文就要明明白白写出那件事
+   - 不得把梗概里的关键情节省略成一句话带过，也不得用回忆、转述的方式替代正在发生的场面
+2. 在满足第 1 条的基础上，可以**添加与梗概方向一致、性质相近的内容**：补充场景细节、动作过程、对话交锋、心理活动、环境氛围、过渡衔接，让情节自然饱满。
+   - 补充的内容必须与梗概意思相近、同向推进，不得引入与梗概无关的新事件、新人物、新设定
+   - 若梗概只写了一句（如“他去查账册”），可以把它展开成一个完整场景；但不得改写它的意思
+3. 与前文保持连贯：人物称呼、身份、关系、已知信息必须与前文一致；可以自然呼应前文细节，但不要重复叙述已经写过的内容。
+4. 禁止出现“如前所述”“回顾一下”这类跳出故事的说明性文字。
+【输出要求】
+- 篇幅约 ${words}，自然分段
+- 不写章节名、不写小标题、不做任何解释说明，直接输出正文
+- 开篇 2-3 段内进入场景或冲突
+- 结尾留下让读者想翻页的钩子`;
+}
+function buildPrompt(idx,mode,gistText){
+  const sys=`你是一位职业小说家，场景感强、对话有张力、节奏干净。**作者给出的本章梗概是硬性要求，你必须严格照着写**：梗概里的人物、动作、对话、物件、地点与先后顺序都要原样落笔，不得改动或省略；在此基础上只允许补充与梗概相近的细节。你同时必须严格遵守给定的世界观设定与角色卡，绝不违背设定、绝不自行新增未铺垫的关键设定或关键人物。\n${styleBlock()}`;
+  const ctx=assembleContext(idx,gistText);
+  let body='';
+  if(mode==='continue'||mode==='expand'||mode==='polish') body=(state.chapters[idx]&&state.chapters[idx].content)||'';
+  const bodyPart = body ? `\n【已有正文】\n${body.slice(-7000)}\n` : '';
+  return {sys, user: ctx.text + bodyPart + tailBlock(idx,mode,gistText), ctx};
+}
+
+async function writeChapter(mode,gistText){
+  const i=state.current;
+  ensureSlot(i);   // 没有大纲也能直接写
+  if((mode==='continue'||mode==='expand'||mode==='polish') && !((state.chapters[i]||{}).content)){
+    toast('本章还没有正文'); return;
+  }
+  const gist = gistText || (state.chapters[i]&&state.chapters[i].gist) || '';
+  try{ if(ensureMem().auto) await ensureMemory(i,gist); }catch(e){ console.warn(e); }
+  const {sys,user,ctx}=buildPrompt(i,mode,gist);
+  updateCtxInfo(ctx);
+  if(state.settings.showPrompt){
+    openDlg(`<h3>提示词预览</h3><div class="hint">输入上下文约 ${ctx.used.toLocaleString()} 字（≈${ctx.tokens.toLocaleString()} token）${ctx.overflow?'，已自动降级压缩':''}</div>
+      <h3 style="margin-top:14px;font-size:14px">System</h3><pre class="prompt">${esc(sys)}</pre>
+      <h3 style="margin-top:14px;font-size:14px">User</h3><pre class="prompt">${esc(user)}</pre>`,
+      [{label:'取消'},{label:'开始生成',cls:'primary',fn:()=>{ setTimeout(()=>runWrite(i,mode,sys,user),50); return true; }}]);
+    return;
+  }
+  runWrite(i,mode,sys,user);
+}
+async function runWrite(i,mode,sys,user){
+  const ch=ensureChapter(i);
+  const label={new:'正在写作',continue:'正在续写',rewrite:'正在重写',expand:'正在扩写',polish:'正在润色'}[mode]||'正在写作';
+  setBusy(true,label+`第 ${i+1} 章…`);
+  if(mode!=='continue'){ ch.content=''; $('#content').value=''; updateCount(); }
+  let acc=(mode==='continue')?ch.content:'';
+  let firstChunk=true;
+  try{
+    await chat([{role:'system',content:sys},{role:'user',content:user}], delta=>{
+      if(firstChunk){
+        firstChunk=false;
+        if(mode==='continue' && acc && !acc.endsWith('\n')) acc+='\n\n';
+      }
+      acc+=delta; ch.content=acc;
+      $('#content').value=acc;
+      $('#content').scrollTop=$('#content').scrollHeight;
+      updateCount();
+    });
+    ch.title=state.outline[i].title;
+    save(); renderChapters(); renderOutline(); refreshInjectPreview();
+    toast('第 '+(i+1)+' 章完成');
+    afterChapterQuiet(i);
+  }catch(e){ toast('生成失败：'+e.message); console.error(e); }
+  finally{ setBusy(false); }
+}
+/* 写完一章后：静静归纳摘要，不打断界面 */
+async function afterChapterQuiet(i){
+  try{
+    const beforeIds=new Set(ensureHooks().map(h=>h.id));
+    if(ensureMem().auto!==false) await summarizeChapter(i,false);
+    renderSummaries(); renderChapters(); updateCtxInfo();
+    return {beforeIds};
+  }catch(e){ console.warn(e); return {beforeIds:new Set()}; }
+}
+/* 出文后：报告本章的伏笔变动 + 提醒陈旧伏笔 */
+function hookReport(i,beforeIds){
+  const list=ensureHooks();
+  const planted=list.filter(h=>h.src==='summary'&&h.plant===i).length;
+  const resolved=list.filter(h=>h.status!=='open'&&h.resolve===i).length;
+  const open=openHooks();
+  const risky=open.filter(h=>{ const a=hookAge(h,i); return a!=null&&a>=15; })
+    .sort((a,b)=>hookAge(b,i)-hookAge(a,i)).slice(0,3)
+    .map(h=>({text:h.text, age:hookAge(h,i)}));
+  if(!planted&&!resolved&&!open.length) return;
+  chatOf(i).push({role:'ai',kind:'hooknote',planted,resolved,open:open.length,risky});
+  if(state.current===i) renderChat();
+  if(risky.length) toast('有 '+risky.length+' 条伏笔已埋超过 15 章未回收');
+}
+$('#btnWrite').onclick=()=>writeChapter('new');
+$('#btnContinue').onclick=()=>writeChapter('continue');
+$('#btnRewrite').onclick=()=>writeChapter('rewrite');
+$('#btnPolish').onclick=()=>writeChapter('polish');
+$('#btnSideNew') && ($('#btnSideNew').onclick=()=>$('#btnTocNew').click());
+
+/* =========================================================
+   对话出文
+   ========================================================= */
+function chatOf(i){ const ch=ensureChapter(i); if(!ch.chat) ch.chat=[]; return ch.chat; }
+function pushMsg(m){ const l=chatOf(state.current); l.push(m); renderChat(); save(); return l.length-1; }
+function updateProse(k,text){
+  const el=document.querySelector(`#chatLog [data-k="${k}"]`);
+  if(!el){ renderChat(); return; }
+  const box=el.querySelector('.bd');          // 正文（逐段着色）
+  const plain=el.querySelector('.body');      // 讨论等纯文本
+  if(box) box.innerHTML=proseHTML(text,true);
+  else if(plain) plain.textContent=text;
+  const c=el.querySelector('.cnt'); if(c) c.textContent=text.replace(/\s/g,'').length+' 字';
+  const log=$('#chatLog'); if(log) log.scrollTop=log.scrollHeight;
+}
+function msgHTML(m,k){
+  if(m.kind==='prose'){
+    const ch=state.chapters[state.current]||{};
+    const adopted = ch.content === m.text && m.text;
+    return `<div class="msg ai prose" data-k="${k}">
+      <div class="tag">
+        <span class="badge on">正文</span>
+        <span class="cnt">${(m.text||'').replace(/\s/g,'').length} 字</span>
+        ${m.streaming?'<span class="badge warn typing">生成中</span>':(ch.committed&&adopted?'<span class="badge ok">已编入目录</span>':(adopted?'<span class="badge ok">已是本章正文</span>':''))}
+      </div>
+      <div class="bd">${proseHTML(m.text||'',!!m.text)}</div>
+      ${castRow(proseHTML.lastUsed||[])}
+      <div class="acts">
+        <button class="btn xs primary" data-act="adopt" data-k="${k}">${adopted?'已是正文':'用作本章正文'}</button>
+        <button class="btn xs" data-act="commit" data-k="${k}">${ch.committed&&adopted?'取消编入':'编入目录'}</button>
+        <button class="btn xs ghost morebtn" data-act="more" data-k="${k}">更多 ⋯</button>
+      </div>
+      <div class="more" data-more="${k}">
+        <button class="btn xs" data-act="append" data-k="${k}">接在末尾</button>
+        <button class="btn xs" data-act="cover" data-k="${k}">核对梗概</button>
+        <button class="btn xs" data-act="expand" data-k="${k}">继续扩写</button>
+        <button class="btn xs" data-act="polish" data-k="${k}">润色</button>
+        <button class="btn xs" data-act="direct" data-k="${k}">按我的要求改</button>
+        <button class="btn xs" data-act="copy" data-k="${k}">复制</button>
+      </div></div>`;
+  }
+  if(m.kind==='commit'){
+    const ch=state.chapters[m.i]||{};
+    const done=!!ch.committed;
+    return `<div class="commitbox ${done?'done':''}" data-k="${k}">
+      <span class="badge ${done?'ok':'warn'}">${done?'已编入目录':'待确认'}</span>
+      <span>第 ${m.i+1} 章${m.title?'《'+esc(m.title)+'》':''}　${(ch.content||'').replace(/\s/g,'').length} 字</span>
+      <div class="spacer"></div>
+      ${done
+        ? `<button class="btn xs" data-act="uncommit" data-k="${k}" data-i="${m.i}">取消编入</button>
+           <button class="btn xs ghost" data-act="read" data-k="${k}" data-i="${m.i}">去阅读</button>`
+        : `<button class="btn xs" data-act="skipcommit" data-k="${k}">稍后再说</button>
+           <button class="btn xs primary" data-act="docommit" data-k="${k}" data-i="${m.i}">✓ 编入书籍目录</button>`}
+    </div>`;
+  }
+  if(m.kind==='coverok'){
+    return `<div class="msg ai" data-k="${k}" style="max-width:97%">
+      <div class="tag"><span class="badge ok">✓ 梗概已覆盖</span><span class="hint" style="margin:0">${esc(m.note||'你写下的内容都已在正文中呈现')}</span></div>
+    </div>`;
+  }
+  if(m.kind==='hooknote'){
+    return `<div class="msg ai" data-k="${k}" style="max-width:97%">
+      <div class="tag"><span class="badge warn">🪝 伏笔提醒</span><span>本章新埋 ${m.planted||0} 条 · 回收 ${m.resolved||0} 条 · 共 ${m.open||0} 条未回收</span></div>
+      ${m.risky&&m.risky.length?`<div style="margin-top:6px;line-height:1.7">${m.risky.map(x=>`<div><span class="hookage">已过 ${x.age} 章</span>　${esc(x.text)}</div>`).join('')}</div>`:''}
+      <div class="acts"><button class="btn xs" data-act="showhooks" data-k="${k}">查看伏笔追踪表</button></div>
+    </div>`;
+  }
+  if(m.kind==='ideas'){
+    return `<div class="msg ai" data-k="${k}" style="max-width:97%">
+      <div class="tag"><span class="badge on">下一章方向</span><span class="hint" style="margin:0">点选一条直接用</span></div>
+      ${m.items.map((x,n)=>`<div class="idea">
+        <div class="t"><span class="badge">${n+1}</span> ${esc(x.title||'未命名')}</div>
+        <div class="isum">${esc(x.summary||'')}</div>
+        ${x.reason?`<div class="ireason">理由：${esc(x.reason)}</div>`:''}
+        <div class="acts" style="border:0;padding-top:7px">
+          <button class="btn xs primary" data-idea="${k}:${n}:gist">用作第 ${state.current+2} 章并切过去</button>
+          <button class="btn xs" data-idea="${k}:${n}:outline">存为下一章梗概</button>
+        </div></div>`).join('')}
+    </div>`;
+  }
+  if(m.kind==='coverage'){
+    const miss=(m.missing||[]).filter(x=>x&&(x.point||x.note));
+    if(!miss.length){
+      return `<div class="msg ai" data-k="${k}" style="max-width:97%">
+        <div class="tag"><span class="badge ok">✓ 梗概已覆盖</span><span class="hint" style="margin:0">${esc(m.note||'你写下的内容都能在正文里找到')}</span></div>
+      </div>`;
+    }
+    return `<div class="msg ai" data-k="${k}" style="max-width:97%">
+      <div class="tag"><span class="badge warn">梗概核对</span><span>有 ${miss.length} 处没写足</span></div>
+      ${miss.slice(0,4).map(p=>`<div style="margin-top:7px;line-height:1.7">
+        <span class="st miss" style="margin-right:6px">缺</span>${esc(p.point||'')}
+        ${p.note?`<span class="hint" style="margin-left:6px">${esc(p.note)}</span>`:''}</div>`).join('')}
+      <div class="acts"><button class="btn xs primary" data-act="fix" data-k="${k}">补写没写到的部分</button>
+        <button class="btn xs ghost" data-act="dismiss" data-k="${k}">忽略</button></div>
+    </div>`;
+  }
+  return `<div class="msg ${m.role==='user'?'user':'ai'}" data-k="${k}">
+    <div class="body">${esc(m.text||'')}</div>${m.streaming?'<div class="tag" style="margin:6px 0 0"><span class="badge warn typing">正在生成</span></div>':''}</div>`;
+}
+const EMPTY_HINT={
+  gist:'写下这一章要写什么，<b>一段自然语言描述也行，分条写也行</b>。<br>AI 会先把你要的内容全部写到，再在留白处适度扩写；<br>写完后会核对是否写全、给出下一章方向，并询问是否编入目录。',
+  talk:'在这里和 AI 讨论剧情、人物动机或设定矛盾。<br>它会带着当前设定、世界观与已写内容回答，不会直接写成正文。',
+  revise:'写下你的修改要求，例如「结尾改得更有压迫感」「两人的对话太客气了」。<br>AI 会按你的要求重写本章，保留原有剧情信息。'
+};
+function renderChat(){
+  const box=$('#chatLog'); if(!box) return;
+  const chip=$('#chatChapterChip');
+  if(chip){
+    const c=state.outline[state.current];
+    chip.textContent = c ? `第 ${state.current+1} 章 · ${c.title||'未命名'}` : '尚未创建章节';
+  }
+  const list=chatOf(state.current);
+  if(!list.length){
+    box.innerHTML='<div class="empty">'+EMPTY_HINT[chatMode]+'</div>';
+    updateCtxInfo(); return;
+  }
+  box.innerHTML=list.map((m,k)=>msgHTML(m,k)).join('');
+  box.scrollTop=box.scrollHeight;
+  updateCtxInfo();
+}
+function ensureChapter(i){
+  if(!state.chapters[i]) state.chapters[i]={title:'',content:'',committed:false,committedAt:0};
+  const ch=state.chapters[i];
+  if(ch.committed==null) ch.committed=false;
+  if(ch.content==null) ch.content='';
+  if(ch.title==null) ch.title='';
+  return ch;
+}
+/* 确保第 i 章存在（可直接开写） */
+function ensureSlot(i){
+  i=Math.max(0,i|0);
+  while(state.outline.length<=i) state.outline.push({title:'',summary:''});
+  return state.outline[i];
+}
+function committedCount(){ return state.chapters.filter(c=>c&&c.committed&&c.content).length; }
+function chapterWords(i){ return ((state.chapters[i]||{}).content||'').replace(/\s/g,'').length; }
+
+/* =========================================================
+   人物对话着色：同一角色固定用同一种颜色
+   同时把「角色卡里的人物」在叙述文字里重点标识（颜色 + 虚线下划线）
+   ========================================================= */
+/* 晴空与海洋主题下的对话配色：在白底上保持足够对比度 */
+const DLG_COLORS=['#0b6f96','#c2570a','#0a7a52','#b02a6b','#6d3ec4','#b5391f','#327a1a','#0e7490','#a1631a','#2258c4','#8a2be2','#0f766e','#96431c','#5b21b6'];
+/* 角色卡人名列表（长的在前，避免短名截断长名） */
+function cardNames(){
+  return (state.chars||[]).filter(c=>c&&c.enabled!==false&&c.name&&String(c.name).trim())
+    .map(c=>String(c.name).trim()).sort((a,b)=>b.length-a.length);
+}
+let nameRegexCache={key:'',re:null};
+function nameRegex(){
+  const names=cardNames();
+  const key=names.join('\u0001');
+  if(nameRegexCache.key!==key){
+    const esc2=s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    nameRegexCache={key, re: names.length? new RegExp('('+names.map(esc2).join('|')+')','g') : null};
+  }
+  return nameRegexCache.re;
+}
+/* 把叙述文字里的角色卡人名标出来（只处理已转义的纯文本片段） */
+function markNames(escaped){
+  const re=nameRegex();
+  if(!re||!escaped) return escaped;
+  return escaped.replace(re,m=>{
+    const color=colorForName(m);
+    return `<span class="cname" style="color:${color};border-bottom-color:${color}77" title="角色卡人物：${esc(m)}">${m}</span>`;
+  });
+}
+/* 本段正文里出现过的角色卡人物（按首次出现排序） */
+function appearingCards(text){
+  const t=String(text||'');
+  if(!t) return [];
+  const out=[];
+  cardNames().slice().sort((a,b)=>t.indexOf(a)-t.indexOf(b)).forEach(n=>{
+    if(t.indexOf(n)>=0 && out.indexOf(n)<0) out.push(n);
+  });
+  return out;
+}
+function colorForName(name){
+  if(!name) return '';
+  if(!state.nameColors) state.nameColors={};
+  if(state.nameColors[name]==null){
+    state.nameColors[name]=Object.keys(state.nameColors).length % DLG_COLORS.length;
+  }
+  return DLG_COLORS[state.nameColors[name]];
+}
+/* 从引号前的一小段文字里猜说话人 */
+const PRONOUNS=['他','她','它','我','你','您','他们','她们','众人','大家','两人','二人','对方','有人','那人','这人','所有人','那个人','那个人','我’'];
+const VERB_RE=/(?:说着|说道|问道|答道|喊道|笑道|叹道|低声道|轻声|冷冷|沉声|开口|反问|接口|喃喃|笑了笑|笑一笑|一笑|笑|说|道|问|答|喊|叫|叹|哼|沉吟|皱眉|摇头|点头|沉默|回答|回应|补充|解释|续道|接道|追问|嘀咕|嘟囔|提高声音|压低声)/;
+function cleanName(s){
+  let prev;
+  do{ prev=s;
+    s=s.replace(/[了着地的而才又便就皆都皆是很太更最]+$/,'');
+    s=s.replace(/(?:说着|说道|问道|答道|喊道|笑道|叹道|低声道|轻声|冷冷|沉声|开口|反问|接口|喃喃|笑了笑|笑一笑|一笑|笑|说|道|问|答|喊|叫|叹|哼|沉吟|皱眉|摇头|点头|沉默|回答|回应|补充|解释|续道|接道|追问|嘀咕|嘟囔)+$/,'');
+  }while(s!==prev);
+  return s.replace(/[，,。、！？!?…：:“”「」『』”"]+$/,'').trim();
+}
+function isName(n){
+  if(!n||PRONOUNS.indexOf(n)>=0) return false;
+  return n.length>=2 && n.length<=4 && /^[\u4e00-\u9fa5A-Za-z·]+$/.test(n);
+}
+/* 已知人物名单：角色卡 + 已经用过的名字 */
+function knownNames(){
+  const out=[];
+  (state.chars||[]).forEach(c=>{ if(c&&c.enabled!==false&&c.name&&out.indexOf(c.name)<0) out.push(c.name); });
+  Object.keys(state.nameColors||{}).forEach(n=>{ if(out.indexOf(n)<0) out.push(n); });
+  return out.sort((a,b)=>b.length-a.length);
+}
+/* 从引号后的文字里找“……”他低声说 */
+function detectAfter(after){
+  const seg=String(after||'').slice(0,20);
+  for(const n of knownNames()){
+    if(seg.slice(0,6).indexOf(n)>=0) return n;
+  }
+  const m=seg.match(/^[^“”「」『』\n]{0,4}?([\u4e00-\u9fa5]{2,4})(?:说着|说道|问道|答道|喊道|笑道|叹道|低声道|轻声|冷冷|说|道|问|答|喊|叫|笑|叹|开口|回答)/);
+  if(m&&isName(m[1])) return m[1];
+  return '';
+}
+/* 从引号前的文字里找说话人 */
+function detectSpeaker(before){
+  const tailStart=Math.max(0,before.length-26);
+  const tail=before.slice(tailStart);
+  let m=tail.match(/([\u4e00-\u9fa5A-Za-z·]{1,8})\s*[：:]\s*$/);
+  if(m){ const n=cleanName(m[1]); if(isName(n)) return {name:n, at:tailStart+m.index}; }
+  m=tail.match(/([\u4e00-\u9fa5A-Za-z·]{1,8})(?:说着|说道|问道|答道|喊道|笑道|叹道|低声道|轻声|冷冷|沉声|开口|反问|接口|喃喃|笑了笑|说|道|问|答|喊|叫|笑|叹|哼|喃喃|开口|回答|回应|接口|嘀咕|嘟囔|追问)[，,。！？!?…]*\s*$/);
+  if(m){ const n=cleanName(m[1]); if(isName(n)) return {name:n, at:tailStart+m.index}; }
+  // 常见写法：“……”他低声问。—— 说话人在引号后面
+  const m2=tail.match(/([\u4e00-\u9fa5]{2,4})\s*(?:低声|冷冷|轻声|沉声)?\s*(?:问|说|道|答|喊|叫|笑|叹)[，,。！？!?…]*\s*$/);
+  if(m2){ const n=cleanName(m2[1]); if(isName(n)) return {name:n, at:tailStart+m2.index}; }
+  // 都找不到：拿最近提到的已知人物名（不标色显示名字，只取颜色）
+  const seg=before.slice(-40);
+  for(const n of knownNames()){
+    if(seg.lastIndexOf(n)>=0) return {name:n, at:0, soft:true};
+  }
+  return null;
+}
+/* 把正文段落变成带颜色的 HTML */
+function paraHTML(raw,ctx){
+  ctx=ctx||{prev:'',n:0,used:[]};
+  const N=(t)=>markNames(esc(t));   // 叙述文字：先转义，再标出角色卡人名
+  const RE=/([「『“"])([^」』”"]{1,400})([」』”"])/g;
+  let out='', last=0, m;
+  while((m=RE.exec(raw))){
+    const before=raw.slice(last,m.index);
+    const after=raw.slice(m.index+m[0].length);
+    const sp=detectSpeaker(before);
+    let name=sp&&sp.name?sp.name:'';
+    if(!name) name=detectAfter(after);
+    if(!name){
+      // 完全找不到归属时：多轮对话里通常轮到另一个人开口
+      if(ctx.prev && ctx.used.length>=2){
+        const i=ctx.used.indexOf(ctx.prev);
+        name=ctx.used[(i+1)%ctx.used.length];
+      } else name=ctx.prev||'';
+    }
+    if(!isName(name)) name='';
+    let color;
+    if(name) color=colorForName(name);
+    if(!color){ color=DLG_COLORS[(ctx.n)%DLG_COLORS.length]; }
+    ctx.n++;
+    if(name) ctx.prev=name;
+    if(name && ctx.used.indexOf(name)<0) ctx.used.push(name);
+    const showName=(name && sp && !sp.soft && sp.at>=last);
+    if(showName){
+      out+=N(raw.slice(last,sp.at));
+      out+=`<span class="dlg-n" style="color:${color}">${esc(sp.name)}</span>`;
+      out+=N(raw.slice(sp.at+sp.name.length,m.index));
+    } else {
+      out+=N(before);
+    }
+    const isCard=cardNames().indexOf(name)>=0;
+    out+=`<span class="dlg" style="color:${color}" title="${esc(name||'未识别的说话人')}${isCard?'（角色卡）':''}">${esc(m[1]+m[2]+m[3])}</span>`;
+    last=m.index+m[0].length;
+  }
+  out+=N(raw.slice(last));
+  return out;
+}
+/* 正文 → 段落 HTML（保留换行结构） */
+function proseHTML(text,colored){
+  const ctx={prev:'',n:0,used:[]};
+  const paras=String(text||'').split(/\n+/).map(s=>s.trim()).filter(Boolean);
+  const html=paras.map(p=>`<p class="para">${colored===false?esc(p):paraHTML(p,ctx)}</p>`).join('');
+  proseHTML.lastUsed=appearingCards(text);
+  return html;
+}
+function nameLegend(names){
+  if(!names||!names.length) return '';
+  return names.slice(0,14).map(n=>`<span style="color:${colorForName(n)};border-color:${colorForName(n)}44">${esc(n)}</span>`).join('');
+}
+/* 正文气泡下方的「出场角色卡」一行 */
+function castRow(names){
+  if(!names||!names.length) return '';
+  return `<div class="castrow">出场角色卡：${nameLegend(names)}</div>`;
+}
+function setChatMode(m){
+  chatMode=m;
+  $$('#segMode button').forEach(b=>b.classList.toggle('on',b.dataset.mode===m));
+  const btn=$('#btnSend');
+  btn.textContent = m==='gist'?'出文':m==='talk'?'讨论':'改稿';
+  btn.classList.toggle('primary',true);
+  const ta=$('#chatInput');
+  ta.placeholder = m==='gist'
+    ? '写下这一章要写的内容（自然语言一段话可以，分条写也可以）。留空则按主线与世界观自主推进。'
+    : m==='talk' ? '想问什么？例如：祁掌柜现在知道多少信息？这条线现在回收合适吗？'
+    : '想怎么改？例如：结尾改得更有压迫感；把两人的对话改得少些客套。';
+  renderChat();
+}
+function ideaItems(k){ const m=chatOf(state.current)[k]; return (m&&m.kind==='ideas')?m.items:[]; }
+function useIdea(k,n,mode){
+  const items=ideaItems(k); const it=items[n]; if(!it) return;
+  const n2=state.current+1;
+  ensureSlot(n2);
+  const ol=state.outline[n2];
+  if(mode==='outline'){
+    ol.title=ol.title||it.title||'';
+    ol.summary=it.summary||'';
+    save(); toast('已存为第 '+(n2+1)+' 章的梗概');
+    return;
+  }
+  ol.title=ol.title||it.title||'';
+  if(!ol.summary) ol.summary=it.summary||'';
+  ensureChapter(n2).gist=it.summary||'';
+  state.current=n2; renderChapters(); setChatMode('gist');
+  $('#chatInput').value=it.summary||'';
+  save(); toast('已切到第 '+(n2+1)+' 章，梗概已填入');
+}
+async function sendChat(){
+  const mode=chatMode;
+  const text=$('#chatInput').value.trim();
+  const i=state.current;
+  ensureSlot(i);   // 没有章节也能直接写
+  const fallbackGist=(state.outline[i]&&state.outline[i].summary)||'';
+  if(mode==='revise' && !text){ toast('请写下你的修改要求'); return; }
+  if(mode==='revise' && !((state.chapters[i]||{}).content)){ toast('本章还没有正文可改'); return; }
+  pushMsg({role:'user',kind:mode==='talk'?'talk':'gist',
+    text: mode==='gist' ? (text || (fallbackGist ? '（按本章已有梗概写作：'+fallbackGist+'）' : '（未写梗概，请按主线与世界观自主推进）')) : text});
+  $('#chatInput').value='';
+  if(mode==='gist') ensureChapter(i).gist=text||fallbackGist;
+  save();
+  if(mode==='gist')   return doGist(i,text||fallbackGist);
+  if(mode==='talk')   return doTalk(i,text);
+  return doRevise(i,text);
+}
+/* 按作者要求改稿 */
+async function doRevise(i,instruction){
+  const k=pushMsg({role:'ai',kind:'prose',text:'',streaming:true});
+  setBusy(true,'正在按你的要求改稿…');
+  try{
+    const ch=ensureChapter(i);
+    const sys=`你是一位职业小说家，擅长按作者的具体意见精准改稿：只改要求的部分，保留其余内容与信息量。\n${styleBlock()}`;
+    const body=(ch.content||'').slice(-9000);
+    const user=`${assembleContext(i,ch.gist||'').text}
+
+【本次任务】按作者的具体要求改写本章正文。
+【作者要求】${instruction}
+【原文】
+${body}
+
+【改稿原则】
+- 严格按作者要求执行，未提及的部分尽量保持原样，不删减已有情节与信息量
+- 与前文人物、称呼、设定保持一致
+- 直接输出完整改后正文，不要写章节名、不要解释改了什么`;
+    let acc='';
+    await chat([{role:'system',content:sys},{role:'user',content:user}],d=>{ acc+=d; updateProse(k,acc); });
+    const m=chatOf(i)[k]; m.text=acc; m.streaming=false;
+    if(state.suggest.autoWrite) ch.content=acc;
+    save(); if(state.current===i) renderChat(); renderChapters(); afterChapterQuiet(i);
+  }catch(e){
+    const m=chatOf(i)[k]; m.text='（失败：'+e.message+'）'; m.streaming=false;
+    if(state.current===i) renderChat();
+  }finally{ setBusy(false); }
+}
+async function doGist(i,gist){
+  const k=pushMsg({role:'ai',kind:'prose',text:'',streaming:true});
+  setBusy(true,`正在写作第 ${i+1} 章…`);
+  try{
+    if(ensureMem().auto) await ensureMemory(i,gist);
+    const {sys,user,ctx}=buildPrompt(i,'new',gist);
+    updateCtxInfo(ctx);
+    const ch=ensureChapter(i); ch.content=''; let acc='';
+    await chat([{role:'system',content:sys},{role:'user',content:user}],d=>{ acc+=d; updateProse(k,acc); });
+    const list=chatOf(i); const msg=list[k]; msg.text=acc; msg.streaming=false;
+    if(state.suggest.autoWrite) ch.content=acc;
+    ch.gist=gist;
+    if(!ch.title && state.outline[i] && state.outline[i].title) ch.title=state.outline[i].title;
+    save(); if(state.current===i) renderChat(); renderChapters();
+    // 自动补一个小标题（已有标题则不覆盖）
+    await autoTitle(i);
+    // 先归纳本章，再据此推断下一章（否则建议会脱离本章实际内容）
+    const node=await afterChapterQuiet(i);
+    hookReport(i,node&&node.beforeIds);
+    if(state.suggest.cover) await checkCoverage(i,gist,acc);
+    if(state.suggest.on && state.suggest.count>0) await genSuggestions(i,state.suggest.count);
+    // 最后询问是否编入书籍目录
+    askCommit(i);
+    updateCtxInfo();
+  }catch(e){
+    const m=chatOf(i)[k]; m.text='（生成失败：'+e.message+'）'; m.streaming=false;
+    if(state.current===i) renderChat(); toast('生成失败：'+e.message); console.error(e);
+  }finally{ setBusy(false); }
+}
+async function doTalk(i,text){
+  const k=pushMsg({role:'ai',kind:'talk',text:'',streaming:true});
+  setBusy(true,'正在讨论…');
+  try{
+    const sys='你是作者的首席剧情参谋，熟悉这部小说的设定、世界观、角色与已写剧情。回答要具体、可执行，必要时主动指出设定冲突或逻辑漏洞，不要说空话。';
+    const user=`${metaBlock()}
+
+${charBlock(i)}
+${worldBlock(i)}
+
+【已有章节与梗概】
+${state.outline.map((c,n)=>`第${n+1}章 ${c.title}：${c.summary}`).join('\n')||'（无）'}
+【已写内容提要】
+${historyDigest(i)}
+【当前章节】第${i+1}章 ${(state.outline[i]&&state.outline[i].title)||''}
+${(state.chapters[i]&&state.chapters[i].content)?'【本章正文】\n'+state.chapters[i].content.slice(-3000):''}
+
+【作者的提问】
+${text||'（请根据当前进度，指出接下来最需要注意的问题）'}
+
+直接回答，不要输出正文，不要客套。`;
+    let acc='';
+    await chat([{role:'system',content:sys},{role:'user',content:user}],d=>{ acc+=d; updateProse(k,acc); });
+    const m=chatOf(i)[k]; m.text=acc; m.streaming=false;
+    save(); if(state.current===i) renderChat();
+  }catch(e){
+    const m=chatOf(i)[k]; m.text='（失败：'+e.message+'）'; m.streaming=false;
+    if(state.current===i) renderChat();
+  }finally{ setBusy(false); }
+}
+async function doText2(i,mode,note){
+  if(!((state.chapters[i]||{}).content)){ toast('本章还没有正文'); return; }
+  const k=pushMsg({role:'ai',kind:'prose',text:'',streaming:true});
+  setBusy(true,mode==='expand'?'正在扩写…':'正在润色…');
+  try{
+    if(ensureMem().auto) await ensureMemory(i,note);
+    const {sys,user,ctx}=buildPrompt(i,mode,note);
+    updateCtxInfo(ctx);
+    let acc='';
+    await chat([{role:'system',content:sys},{role:'user',content:user}],d=>{ acc+=d; updateProse(k,acc); });
+    const m=chatOf(i)[k]; m.text=acc; m.streaming=false;
+    if(state.suggest.autoWrite) ensureChapter(i).content=acc;
+    save(); if(state.current===i) renderChat(); renderChapters();
+  }catch(e){
+    const m=chatOf(i)[k]; m.text='（失败：'+e.message+'）'; m.streaming=false;
+    if(state.current===i) renderChat();
+  }finally{ setBusy(false); }
+}
+/* 梗概核对（精简版：只说“哪里没写到”，没缺就不再打扰）
+   梗概可以是分条要点，也可以是一整段自然语言叙述，两者都支持 */
+async function checkCoverage(i,gist,text){
+  if(!String(gist||'').trim() || !String(text||'').trim()) return;
+  setBusy(true,'正在核对梗概…');
+  try{
+    const sys='你是小说审稿编辑。作者写下的「期望内容」可能是分条要点，也可能是一整段自然语言描述。你只做一件事：找出正文里**完全没有涉及**的内容。';
+    const user=`【作者希望这一章写到的内容】
+${gist}
+
+【正文】
+${text}
+
+【判断尺子——从宽认定】
+- 作者列了要点：只要正文里有**意思相近**的内容就算写到了，不要求字面相同、不要求细节完全对应、不要求专门写一段
+- 作者写的是自然语言描述：只要正文展现了那件事的大意就算写到了
+- 同一件事换了一种说法、换了个场合、由另一个角色说了——都算写到了
+- 正文涉及了该内容，只是写得简略，也算写到了（不要因为“不够精彩”而列入）
+
+【只有下面这些情况才算没写到】
+- 正文里完全找不到与这条内容意思相近的任何文字
+- 该内容被明确写成了相反的结果
+
+【不要做的事】
+- 不要提关于文笔、节奏、描写的意见
+- 不要因为“还可以写得更好”而列入
+- 确实全写到了就返回空数组
+
+只输出 JSON，不要解释、不要代码块标记：
+{"missing":[{"point":"完全没涉及的内容，短句","note":"建议怎么补，一句话"}]}`;
+    const out=await chat([{role:'system',content:sys},{role:'user',content:user}]);
+    let t=String(out).trim().replace(/^```(?:json)?/i,'').replace(/```$/,'').trim();
+    const a=t.indexOf('{'),b=t.lastIndexOf('}'); if(a>=0&&b>a) t=t.slice(a,b+1);
+    let j=null; try{ j=JSON.parse(t); }catch(_){}
+    let missing=Array.isArray(j)?j:((j&&j.missing)||[]);
+    missing=(Array.isArray(missing)?missing:[]).filter(x=>x&&(x.point||x.note)).slice(0,6);
+    chatOf(i).push({role:'ai',kind:'coverage',missing,note:missing.length?'':'梗概里的内容正文都写到了（含意思相近的表述）'});
+    if(state.current===i) renderChat();
+    if(missing.length && state.current===i) toast(`有 ${missing.length} 处没写到，可点「补写」`);
+  }catch(e){ console.warn(e); }
+  finally{ setBusy(false); }
+}
+/* 编入 / 取消编入书籍目录 */
+function commitChapter(i,on){
+  const ch=ensureChapter(i);
+  const ol=ensureSlot(i);
+  const on2 = (on==null) ? !ch.committed : !!on;
+  ch.committed=on2;
+  ch.committedAt=on2?Date.now():0;
+  if(!ch.title && ol.title) ch.title=ol.title;
+  save();
+  renderChapters(); renderTOC(); if(state.current===i) renderChat();
+  syncLibMeta();
+  toast(on2?`第 ${i+1} 章已编入目录，后续写作将以它为准`:`第 ${i+1} 章已取消编入`);
+}
+/* 出文后询问是否编入目录 */
+function askCommit(i){
+  const ch=state.chapters[i]||{};
+  const list=chatOf(i);
+  const last=list[list.length-1];
+  if(last && last.kind==='commit' && last.i===i) return;
+  list.push({role:'ai',kind:'commit',i,title:ch.title||(state.outline[i]&&state.outline[i].title)||''});
+  if(state.current===i) renderChat();
+}
+/* 自动为本章起一个小标题（不覆盖已有标题） */
+async function autoTitle(i){
+  const ch=state.chapters[i]||{};
+  const ol=state.outline[i]||{};
+  if((ch.title||'').trim() || (ol.title||'').trim()) return;
+  if(!ch.content) return;
+  try{
+    const out=await chat([{role:'system',content:'你是小说编辑，擅长起简洁有力的中文章节标题。'},
+      {role:'user',content:`为下面这一章起一个标题。\n要求：4-10 字，不剧透结尾悬念，不用“第X章”两字，不加书名号，不要句号。只输出标题本身。\n\n【正文】\n${ch.content.slice(0,2500)}`}]);
+    const t=String(out).trim().split('\n')[0].replace(/^[《“"']|[》”"']$/g,'').replace(/^第\S+章[\s：:·、-]*/,'').trim().slice(0,16);
+    if(t){
+      ensureChapter(i).title=t; ensureSlot(i).title=t;
+      save(); renderChapters(); renderTOC(); syncEditor();
+      if(state.current===i) renderChat();
+      toast('已为本章起标题：'+t);
+    }
+  }catch(e){ console.warn('自动起标题失败',e); }
+}
+/* 补写被遗漏的情节 */
+async function fixMissing(i,gist,text){
+  setBusy(true,'正在补写缺失情节…');
+  try{
+    const sys=`你是一位职业小说家，擅长在不破坏已有叙述的前提下，把遗漏的情节自然补进文中。\n${styleBlock()}`;
+    const user=`${metaBlock()}
+
+${charBlock(i)}
+${worldBlock(i)}
+
+【完整梗概】
+${gist}
+
+【已有正文】
+${text.slice(-6000)}
+
+【任务】上面的正文遗漏了梗概中的部分要点。请只输出需要补写的段落（1-3 段），应当能无缝插在现有正文的合适位置。
+要求：
+- 只写缺失的那部分情节，不要重写全章
+- 与前后文风格、称呼、时态保持一致
+- 补写后要能自然接上原有叙述，不要出现“补充说明”之类的跳脱文字
+直接输出正文段落。`;
+    const out=await chat([{role:'system',content:sys},{role:'user',content:user}]);
+    const t=String(out).trim();
+    const k=chatOf(i).push({role:'ai',kind:'prose',text:t+'\n\n（以上为补写段落，点「追加到正文」补入本章）'})-1;
+    if(state.current===i) renderChat();
+    toast('已生成补写段落');
+    return k;
+  }catch(e){ toast('补写失败：'+e.message); }
+  finally{ setBusy(false); }
+}
+/* 下一章方向建议 */
+function historyDigest(idx){
+  const out=[];
+  const m=ensureMem();
+  const start=Math.max(0,idx-11);
+  if(start>0) out.push(`（第 1-${start} 章的内容已并入上方「前情总纲」）`);
+  for(let i=start;i<idx;i++){
+    const ch=state.chapters[i]||{};
+    const tag=(ch.committed&&ch.content)?'':'（草稿）';
+    if(ch.summary) out.push(`第${i+1}章${tag}：${ch.summary}`);
+    else if(ch.content) out.push(`第${i+1}章${tag}：${ch.content.replace(/\s/g,'').slice(0,150)}…`);
+  }
+  return out.join('\n')||'（此前尚无已写章节）';
+}
+/* 「刚写完的这一章」的实况：梗概 + 摘要 + 结尾原文，专供推断下一章使用 */
+function storyNowBlock(idx){
+  const ch=state.chapters[idx]||{};
+  const ol=state.outline[idx]||{};
+  const body=String(ch.content||'');
+  const clean=body.replace(/\s/g,'');
+  const parts=[];
+  parts.push(`第${idx+1}章《${ol.title||ch.title||''}》${ch.committed&&clean?'（已编入目录，属定稿）':'（尚未编入目录的草稿）'}`);
+  const gist=ch.gist||ol.summary||'';
+  if(gist) parts.push('【写作前设定的梗概要点】\n'+gist);
+  if(ch.summary) parts.push('【本章实际发生了什么（摘要）】\n'+ch.summary);
+  if(clean.length){
+    const tail=body.slice(-1500);
+    parts.push(`【本章结尾原文（全章 ${clean.length} 字，以下为最后一段）】\n…${tail}`);
+  } else {
+    parts.push('（本章还没有正文）');
+  }
+  return parts.join('\n');
+}
+async function genSuggestions(idx,count,extra){
+  count=Math.max(0,Math.min(8,parseInt(count)||0));
+  if(!count){ toast('建议条数为 0，已跳过'); return; }
+  /* 先确保本章已归纳，否则推断会脱离本章实际结局 */
+  const cur=state.chapters[idx];
+  if(cur&&cur.content&&!cur.summary){
+    setBusy(true,'正在归纳本章要点…');
+    try{ await summarizeChapter(idx); renderSummaries(); }catch(e){ console.warn(e); }
+  }
+  setBusy(true,'正在构思下一章方向…');
+  try{
+    const nx=idx+1;
+    const at=Math.min(nx, Math.max(0,state.outline.length-1));
+    const o1=state.outline[nx], o2=state.outline[nx+1];
+    const m=ensureMem();
+    const planned = o1
+      ? `第${nx+1}章 ${o1.title||''}：${o1.summary||'（作者未填，可自由发挥，但要接着本章往下写）'}`
+      : '尚未设定（可自由发挥，但必须接着本章往下写）';
+    const later = o2 ? `第${nx+2}章 ${o2.title||''}：${o2.summary||'（未填）'}` : '';
+    const sys='你是资深小说策划。你会先读懂“作者刚刚写完的这一章”实际发生了什么，再据此推断下一章最该写什么；绝不提出与刚发生的情节无关、或已经写过的方向。';
+    const user=`${metaBlock()}
+
+${charBlock(at)}
+${worldBlock(at)}
+${m.rolling?`\n【前情总纲】\n${m.rolling}\n`:''}
+${outlineWindow(at)}
+
+【作者刚刚写完的这一章（重点）】
+${storyNowBlock(idx)}
+
+【此前章节提要】
+${historyDigest(idx)}
+${extra?`\n【作者补充说明】\n${extra}\n`:''}
+【下一章原定安排】${planned}
+${later?`【更后面的安排（不可提前写掉）】${later}`:''}
+
+【任务】基于「作者刚刚写完的这一章」的**实际结局与遗留线索**，推断接下来最该发生什么，给出 ${count} 个彼此不同的下一章方向${count>1?'（尽量覆盖不同功能：正面对抗 / 暗线推进 / 人物关系转折 / 悬念回收 / 节奏喘息的日常）':''}。
+${hookBlock(idx)?`\n【待回收伏笔（若某个方向能自然推进或回收其中一条，优先考虑）】\n${openHooks().slice(0,8).map(h=>'- '+h.text).join('\n')}`:''}
+
+硬性要求：
+1. 每个方向必须从本章结尾的**具体处境**出发（谁在场、谁知道了什么、留下了什么未解之物、什么动作还没完成），不得凭空另起炉灶
+2. 优先处理本章新产生的悬念与未完成的动作；若本章回收了旧钩子，要指出它引出了什么新问题
+3. 不得重复已经写过的情节，也不得提前写掉更后面章节的安排
+4. summary 要写清“具体发生了什么 + 结尾留什么钩子”，不要“继续调查”“遭遇新的敌人”这类空话
+
+只输出 JSON 数组，不要解释、不要代码块标记：
+[{"title":"章节标题","summary":"梗概 60-100 字，写清发生什么 + 结尾留什么钩子","reason":"为什么现在写这个方向，要指出承接了本章的哪一点"}]`;
+    const out=await chat([{role:'system',content:sys},{role:'user',content:user}]);
+    let t=String(out).trim().replace(/^```(?:json)?/i,'').replace(/```$/,'').trim();
+    const a=t.indexOf('['),b=t.lastIndexOf(']'); if(a>=0&&b>a) t=t.slice(a,b+1);
+    let arr=[]; try{ arr=JSON.parse(t); }catch(_){}
+    arr=(Array.isArray(arr)?arr:[]).filter(x=>x&&(x.title||x.summary)).slice(0,count);
+    if(!arr.length){ toast('未能解析出建议，可稍后重试'); return; }
+    chatOf(idx).push({role:'ai',kind:'ideas',items:arr});
+    if(state.current===idx) renderChat();
+  }catch(e){ toast('建议生成失败：'+e.message); console.error(e); }
+  finally{ setBusy(false); }
+}
+
+/* 对话区事件 */
+$('#btnSend').onclick=()=>sendChat();
+$('#chatInput').addEventListener('keydown',e=>{
+  if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){ e.preventDefault(); sendChat(); }
+});
+$$('#segMode button').forEach(b=>b.onclick=()=>setChatMode(b.dataset.mode));
+$('#btnChatOpts').onclick=e=>{
+  e.stopPropagation();
+  const p=$('#chatOpts'); p.style.display = p.style.display==='none'?'block':'none';
+};
+document.addEventListener('click',e=>{
+  const p=$('#chatOpts');
+  if(p && p.style.display!=='none' && !p.contains(e.target) && e.target.id!=='btnChatOpts') p.style.display='none';
+});
+$('#btnIdeas').onclick=()=>{
+  const i=state.current;
+  if(!state.outline[i]){ toast('请先选择章节'); return; }
+  genSuggestions(i, ensureMem().suggest.count||3);
+};
+$('#chatLog').addEventListener('click',async e=>{
+  const btn=e.target.closest('button'); if(!btn) return;
+  const k=+btn.dataset.k, i=state.current;
+  if(btn.dataset.idea){
+    const [kk,nn,mm]=btn.dataset.idea.split(':');
+    useIdea(+kk,+nn,mm); return;
+  }
+  const act=btn.dataset.act; if(!act) return;
+  const msg=chatOf(i)[k]; if(!msg) return;
+  if(act==='more'){
+    const box=document.querySelector(`#chatLog [data-more="${k}"]`);
+    if(box) box.classList.toggle('open');
+    return;
+  }
+  if(act==='copy'){ navigator.clipboard.writeText(msg.text||'').then(()=>toast('已复制'),()=>toast('复制失败')); return; }
+  if(act==='adopt'){
+    ensureChapter(i).content=msg.text||''; save(); syncEditor(); renderChapters(); renderChat();
+    if(!(state.chapters[i].title||'').trim()){ toast('已用作第 '+(i+1)+' 章正文，正在起标题…'); await autoTitle(i); }
+    else toast('已用作第 '+(i+1)+' 章正文');
+    askCommit(i); return;
+  }
+  if(act==='docommit'||act==='uncommit'){
+    const t=+btn.dataset.i;
+    const ti=isNaN(t)?i:t;
+    if(act==='docommit' && msg.text && !(state.chapters[ti]||{}).content) ensureChapter(ti).content=msg.text;
+    commitChapter(ti, act==='docommit'); return;
+  }
+  if(act==='skipcommit'){
+    msg.kind='coverok';
+    msg.note='第 '+(i+1)+' 章尚未编入目录，可在「📖 目录阅读」里随时编入';
+    renderChat(); toast('已保留为草稿，不影响继续写下一章'); return;
+  }
+  if(act==='read'){
+    readIdx=+btn.dataset.i; $$('.subtab').forEach(x=>x.classList.remove('active'));
+    const t=$$('.subtab').find(x=>x.dataset.sub==='toc'); if(t) t.classList.add('active');
+    ['chat','text','toc','mem'].forEach(s=>{ const el=$('#sub-'+s); if(el) el.style.display=(s==='toc')?'':'none'; });
+    renderTOC(); return;
+  }
+  if(act==='showhooks'){ gotoSub('hook'); return; }
+  if(act==='dismiss'){
+    const list=chatOf(i); const mx=list.findIndex(x=>x===msg); if(mx>=0) list.splice(mx,1);
+    renderChat(); return;
+  }
+  if(act==='append'){
+    const ch=ensureChapter(i);
+    ch.content=(ch.content?ch.content.replace(/\s+$/,'')+'\n\n':'')+(msg.text||'');
+    save(); syncEditor(); renderChapters(); toast('已接在正文末尾'); return;
+  }
+  if(act==='cover'){ await checkCoverage(i, ensureChapter(i).gist||(state.outline[i]&&state.outline[i].summary)||'', msg.text||''); return; }
+  if(act==='fix'){ await fixMissing(i, ensureChapter(i).gist||'', ensureChapter(i).content||''); return; }
+  if(act==='expand'){ await doText2(i,'expand',''); return; }
+  if(act==='polish'){ await doText2(i,'polish',''); return; }
+  if(act==='direct'){
+    const ins=prompt('想怎么改？（例如：把结尾改得更有压迫感）\n留空则直接对该版本重写一次。');
+    if(ins===null) return;
+    await doRevise(i, ins||'重写这一版，让节奏更紧、画面更具体。');
+    return;
+  }
+});
+/* 开关 */
+function bindSuggestToggles(){
+  const s=ensureMem(), sug=state.suggest;
+  $('#optCover').checked=sug.cover; $('#optAutoWrite').checked=sug.autoWrite;
+  $('#optSuggest').checked=sug.on; $('#optSuggestN').value=sug.count;
+  const sync=()=>{ $('#optSuggest').checked=sug.on; $('#m-autosuggest').checked=sug.on;
+    $('#optCover').checked=sug.cover; $('#optAutoWrite').checked=sug.autoWrite;
+    $('#optSuggestN').value=sug.count; $('#m-suggestn').value=sug.count; save(); };
+  $('#optCover').onchange=e=>{ sug.cover=e.target.checked; sync(); };
+  $('#optAutoWrite').onchange=e=>{ sug.autoWrite=e.target.checked; sync(); };
+  $('#optSuggest').onchange=e=>{ sug.on=e.target.checked; sync(); };
+  $('#m-autosuggest').onchange=e=>{ sug.on=e.target.checked; sync(); };
+  $('#optSuggestN').onchange=e=>{ sug.count=Math.max(0,Math.min(8,parseInt(e.target.value)||0)); sync(); };
+  $('#m-suggestn').onchange=e=>{ sug.count=Math.max(0,Math.min(8,parseInt(e.target.value)||0)); sync(); };
+  $('#m-limit').value=s.limit; $('#m-keep').value=s.keepFull; $('#m-auto').checked=s.auto;
+  $('#m-limit').onchange=e=>{ s.limit=Math.max(2000,parseInt(e.target.value)||24000); e.target.value=s.limit; save(); updateCtxInfo(); };
+  $('#m-keep').onchange=e=>{ s.keepFull=Math.max(0,Math.min(5,parseInt(e.target.value)||0)); e.target.value=s.keepFull; save(); updateCtxInfo(); };
+  $('#m-auto').onchange=e=>{ s.auto=e.target.checked; save(); };
+  $('#btnResummarize').onclick=async()=>{
+    const done=state.chapters.filter(c=>c&&c.content).length;
+    if(!done){ toast('还没有已写章节'); return; }
+    if(!confirm('将重新归纳全部 '+done+' 章的摘要，会多次调用模型，确定继续？')) return;
+    for(let i=0;i<state.outline.length;i++){
+      if(!(state.chapters[i]&&state.chapters[i].content)) continue;
+      setBusy(true,`正在归纳第 ${i+1} 章…`);
+      try{ await summarizeChapter(i,true); }catch(e){ console.warn(e); }
+    }
+    renderSummaries(); updateCtxInfo(); setBusy(false); toast('全部章节摘要已更新');
+  };
+  $('#btnCompress').onclick=async()=>{
+    setBusy(true,'正在压缩前情…');
+    try{ const did=await compressMemory(true); renderSummaries(); updateCtxInfo(); toast(did?'前情总纲已更新':'没有可压缩的摘要'); }
+    catch(e){ toast('压缩失败：'+e.message); } finally{ setBusy(false); }
+  };
+  $('#btnResetMem').onclick=()=>{
+    if(!confirm('清空前情总纲与所有章节摘要？正文不受影响。')) return;
+    s.rolling=''; s.trackedUpto=0;
+    state.chapters.forEach(c=>{ if(c) c.summary=''; });
+    renderSummaries(); updateCtxInfo(); save(); toast('记忆已清空');
+  };
+}
+function renderSummaries(){
+  const box=$('#summaryList'); if(!box) return;
+  if(!state.outline.length){ box.innerHTML='<div class="hint">还没有章节。</div>'; return; }
+  const folded=ensureMem().trackedUpto||0;
+  box.innerHTML=state.outline.map((c,i)=>{
+    const ch=state.chapters[i]||{};
+    return `<div class="item ${i<folded?'dim':''}">
+      <div class="item-head">
+        <span class="badge">第 ${i+1} 章</span><span class="nm">${esc(c.title||'')}</span>
+        <div class="spacer"></div>
+        ${i<folded?'<span class="badge on">已并入总纲</span>':''}
+        ${ch.summary?'<span class="badge ok">已归纳</span>':'<span class="badge warn">未归纳</span>'}
+        <button class="btn xs ghost" data-re="${i}">重归纳</button>
+        <button class="btn xs ghost" data-go2="${i}">定位</button>
+      </div>
+      <textarea data-sum="${i}" style="min-height:72px;margin-top:6px;font-size:12.5px" placeholder="（暂无摘要）">${esc(ch.summary||'')}</textarea>
+    </div>`;
+  }).join('');
+  box.querySelectorAll('[data-sum]').forEach(el=>el.addEventListener('input',()=>{
+    ensureChapter(+el.dataset.sum).summary=el.value; save();
+  }));
+  box.querySelectorAll('[data-re]').forEach(b=>b.onclick=async()=>{
+    const i=+b.dataset.re;
+    if(!(state.chapters[i]&&state.chapters[i].content)){ toast('该章还没有正文'); return; }
+    setBusy(true,`正在归纳第 ${i+1} 章…`);
+    try{ await summarizeChapter(i,true); renderSummaries(); updateCtxInfo(); toast('已重新归纳'); }
+    catch(e){ toast('失败：'+e.message); } finally{ setBusy(false); }
+  });
+  box.querySelectorAll('[data-go2]').forEach(b=>b.onclick=()=>{
+    state.current=+b.dataset.go2; renderChapters(); $$('.subtab')[0].click();
+  });
+}
+function updateCtxInfo(ctx){
+  const c = ctx || assembleContext(state.current,'');
+  const pct=Math.min(100,Math.round(c.used/c.limit*100));
+  const el=$('#ctxInfo');
+  if(el) el.innerHTML=`上下文 ${c.used.toLocaleString()}/${c.limit.toLocaleString()} 字 · ≈${c.tokens.toLocaleString()} token（${pct}%）${openHooks().length?` · 🪝待回收 ${openHooks().length}`:''}${c.overflow?' <span class="badge warn">已超限并自动降级</span>':''}`;
+  const g=$('#ctxGauge'); if(g){ g.querySelector('i').style.width=pct+'%'; g.classList.toggle('hot',pct>=85); }
+  const pre=$('#ctxPreview'); if(pre) pre.textContent=c.text;
+  const st=$('#memStat');
+  if(st){
+    const m=ensureMem();
+    const done=state.chapters.filter(x=>x&&x.content).length;
+    const sum=state.chapters.filter(x=>x&&x.summary).length;
+    st.innerHTML=`已写 ${done} 章 · 已归纳 ${sum} 章 · 前情总纲 ${m.rolling?m.rolling.length+' 字':'（未生成）'} · 已并入总纲：前 ${m.trackedUpto||0} 章`;
+  }
+  return c;
+}
+/* 子标签切换 */
+$$('.subtab').forEach(t=>t.onclick=()=>{
+  $$('.subtab').forEach(x=>x.classList.remove('active'));
+  t.classList.add('active');
+  ['chat','text','toc','mem','hook'].forEach(s=>{ const el=$('#sub-'+s); if(el) el.style.display=(s===t.dataset.sub)?'':'none'; });
+  if(t.dataset.sub==='mem'){ renderSummaries(); updateCtxInfo(); }
+  if(t.dataset.sub==='chat'){ renderChat(); }
+  if(t.dataset.sub==='toc'){ renderTOC(); }
+  if(t.dataset.sub==='hook'){ renderHooks(); }
+});
+$('#btnCtx').onclick=()=>{ $$('.subtab')[3].click(); };
+/* 伏笔追踪面板 */
+function gotoSub(name){
+  const t=$$('.subtab').find(x=>x.dataset.sub===name); if(t) t.click();
+}
+$('#segHookFilter').querySelectorAll('button').forEach(b=>b.onclick=()=>{
+  $('#segHookFilter').querySelectorAll('button').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on'); hookFilter=b.dataset.hf; renderHooks();
+});
+$('#hookList').addEventListener('click',e=>{
+  const btn=e.target.closest('button[data-hook]'); if(!btn) return;
+  const id=btn.dataset.id;
+  const h=ensureHooks().find(x=>x.id===id); if(!h) return;
+  const act=btn.dataset.hook;
+  if(act==='close'){ h.status='closed'; h.resolve=state.current; save(); renderHooks(); if(state.current===h.plant) renderChat(); toast('已标记为已回收'); return; }
+  if(act==='reopen'){ h.status='open'; h.resolve=null; save(); renderHooks(); toast('已重新打开'); return; }
+  if(act==='del'){ if(!confirm('删除这条伏笔记录？')) return; state.hooks=ensureHooks().filter(x=>x.id!==id); save(); renderHooks(); return; }
+  if(act==='edit'){
+    const v=prompt('伏笔内容：', h.text); if(v===null) return;
+    h.text=String(v).trim()||h.text; h.manual=true; save(); renderHooks(); return;
+  }
+  if(act==='goto'){
+    if(h.plant==null) return;
+    state.current=h.plant; readIdx=h.plant; renderChapters(); gotoSub('chat'); toast('已切到第 '+(h.plant+1)+' 章'); return;
+  }
+});
+$('#btnRescanHooks').onclick=()=>rescanHooks();
+$('#btnHookAdd').onclick=()=>{
+  const t=prompt('要追跟的伏笔（写清“什么东西、什么疑问”）：');
+  if(!t||!t.trim()) return;
+  const c=prompt('在第几章埋下的？（直接回车 = 当前第 '+(state.current+1)+' 章）', String(state.current+1));
+  const n=parseInt(c);
+  const h=addHook(t, isNaN(n)?state.current:Math.max(0,n-1), 'manual');
+  if(h){ h.manual=true; save(); renderHooks(); toast('已添加，未回收伏笔共 '+openHooks().length+' 条'); }
+};
+/* 目录相关按钮 */
+$('#btnTocNew').onclick=()=>{
+  const i=state.outline.length;
+  ensureSlot(i); ensureChapter(i);
+  state.current=i; readIdx=i;
+  renderChapters(); renderOutline(); renderTOC(); renderChat();
+  $$('.subtab')[0].click();
+  toast('已新建第 '+(i+1)+' 章，写下要点即可出文');
+};
+$('#tocShowDraft').onchange=()=>renderTOC();
+$('#btnReadCommit').onclick=()=>{
+  if(readIdx>=state.outline.length){ toast('先选一个章节'); return; }
+  commitChapter(readIdx); renderTOC(); renderRead();
+};
+$('#btnReadEdit').onclick=()=>{
+  state.current=readIdx; renderChapters(); renderChat();
+  $$('.subtab')[0].click();
+};
+$('#btnReadPrev').onclick=()=>{
+  const list=tocOrder();
+  const at=list.indexOf(readIdx);
+  if(at>0){ readIdx=list[at-1]; renderTOC(); }
+  else toast('已经是第一章');
+};
+$('#btnReadNext').onclick=()=>{
+  const list=tocOrder();
+  const at=list.indexOf(readIdx);
+  if(at>=0&&at<list.length-1){ readIdx=list[at+1]; renderTOC(); }
+  else toast('已经是最后一章');
+};
+$('#btnReadExport').onclick=()=>exportNovelTxt();
+/* 阅读时上一个/下一个只走“目录里能看到的那批” */
+function tocOrder(){
+  const showDraft=$('#tocShowDraft')?$('#tocShowDraft').checked:true;
+  const out=[];
+  for(let i=0;i<state.outline.length;i++){
+    const ch=state.chapters[i]||{};
+    const has=!!(ch.content&&ch.content.trim());
+    if(!showDraft && !(ch.committed&&has)) continue;
+    out.push(i);
+  }
+  return out.length?out:state.outline.map((_,i)=>i);
+}
+function exportNovelTxt(){
+  const title=state.meta.title||'未命名作品';
+  const onlyCommitted=confirm('导出范围：\n\n【确定】只导出已编入目录的章节（成书稿）\n【取消】导出全部章节（含草稿）');
+  let txt=`${title}\n类型：${state.meta.genre}　视角：${state.meta.pov}\n`;
+  if(state.meta.mainline) txt+=`主线：${state.meta.mainline}\n`;
+  txt+='\n'+'─'.repeat(30)+'\n\n【目录】\n';
+  const idxs=[];
+  state.outline.forEach((c,i)=>{
+    const ch=state.chapters[i]||{};
+    const has=!!(ch.content&&ch.content.trim());
+    if(onlyCommitted && !(ch.committed&&has)) return;
+    idxs.push(i);
+    txt+=`第${i+1}章　${c.title||ch.title||''}\n`;
+  });
+  txt+='\n'+'─'.repeat(30)+'\n\n';
+  idxs.forEach(i=>{
+    const c=state.outline[i]||{}, ch=state.chapters[i]||{};
+    txt+=`第${i+1}章　${c.title||ch.title||''}\n\n${ch.content||'（未写）'}\n\n\n`;
+  });
+  download(title+(onlyCommitted?'（成书稿）':'（含草稿）')+'.txt',txt);
+  toast('已导出 '+(onlyCommitted?'已编入的 '+idxs.length+' 章':'全部 '+idxs.length+' 章'));
+}
+
+$('#btnInspect').onclick=()=>{
+  const i=state.current;
+  if(!state.outline[i]){ toast('先选择章节'); return; }
+  const {included,overflow}=buildWorldContext(i);
+  const cs=activeCharsFor(i);
+  openDlg(`<h3>第 ${i+1} 章 · 上下文预览</h3>
+    <div class="hint">扫描范围：最近 ${state.settings.scan} 字 ｜ 世界书上限：${state.settings.budget} 字</div>
+    <h3 style="margin-top:16px;font-size:14px">角色卡（${cs.length}）</h3>
+    <div>${cs.map(c=>`<span class="badge on">${esc(c.name)}</span>`).join(' ')||'<span class="hint">无</span>'}</div>
+    <h3 style="margin-top:16px;font-size:14px">世界书条目（${included.length}）</h3>
+    ${included.map(e=>`<div class="item"><div class="item-head"><span class="badge ${e.constant?'on':'ok'}">${e.constant?'常驻':'命中'}</span><span class="nm">${esc(e.comment)}</span></div></div>`).join('')||'<div class="hint">无</div>'}
+    ${overflow.length?`<div class="warnbox">超出上限被截断：${overflow.map(e=>esc(e.comment)).join('、')}</div>`:''}`,
+    [{label:'关闭'}]);
+};
+$('#btnPrompt').onclick=()=>{
+  const i=state.current;
+  if(!state.outline[i]){ toast('先选择章节'); return; }
+  const {sys,user}=buildPrompt(i,'new');
+  openDlg(`<h3>完整提示词</h3><h3 style="margin-top:14px;font-size:14px">System</h3><pre class="prompt">${esc(sys)}</pre>
+    <h3 style="margin-top:14px;font-size:14px">User</h3><pre class="prompt">${esc(user)}</pre>`,[{label:'关闭'}]);
+};
+$('#btnCheck').onclick=async ()=>{
+  const i=state.current;
+  const txt=$('#content').value.trim();
+  if(!txt){ toast('本章还没有正文'); return; }
+  const sys='你是严谨的小说设定校对编辑，擅长发现世界观矛盾、人物性格崩坏与剧情逻辑漏洞。';
+  const user=`以下是本书的设定资料与一章正文，请检查这一章是否与设定矛盾。
+
+${charBlock(i)}
+${worldBlock(i)}
+【作品设定】
+${metaBlock()}
+【本章梗概要求】${state.outline[i]?state.outline[i].summary:'（无）'}
+
+【正文】
+${txt}
+
+只输出 JSON 数组，每项一个发现的问题，不要解释、不要代码块标记：
+[{"type":"设定冲突|人物不一致|剧情问题","detail":"问题描述","quote":"原文中的相关句子","advice":"修改建议"}]
+若没有发现问题，输出 []`;
+  setBusy(true,'正在做一致性检查…');
+  try{
+    const out=await chat([{role:'system',content:sys},{role:'user',content:user}]);
+    let t=String(out).trim().replace(/^```(?:json)?/i,'').replace(/```$/,'').trim();
+    const s=t.indexOf('['), e=t.lastIndexOf(']');
+    if(s>=0&&e>s) t=t.slice(s,e+1);
+    let arr=[]; try{ arr=JSON.parse(t); }catch(_){}
+    if(!Array.isArray(arr)||!arr.length){
+      openDlg('<h3>一致性检查</h3><div class="okbox">没有发现明显与设定矛盾之处。设定越完整，这项检查越可靠。</div>',[{label:'关闭'}]);
+      return;
+    }
+    openDlg(`<h3>一致性检查 · ${arr.length} 处发现</h3>`+arr.map((x,k)=>
+      `<div class="item"><div class="item-head"><span class="badge warn">${esc(x.type||'问题')}</span></div>
+       <div style="margin-top:6px">${esc(x.detail||'')}</div>
+       ${x.quote?`<div class="hint">原文：${esc(x.quote)}</div>`:''}
+       ${x.advice?`<div class="hint" style="color:var(--ok)">建议：${esc(x.advice)}</div>`:''}</div>`).join(''),
+      [{label:'关闭'}]);
+  }catch(e){ toast('检查失败：'+e.message); }
+  finally{ setBusy(false); }
+};
+
+/* =========================================================
+   模型调用
+   ========================================================= */
+function apiState(ok,msg){
+  const d=$('#dot'), t=$('#statusText');
+  if(!d||!t) return;
+  d.className='dot'+(ok?'':' bad');
+  t.textContent=msg||(ok?'已接入模型':'调用失败');
+}
+async function chat(messages,onDelta){
+  const {base,key,model}=state.api;
+  if(!key||!base) return mockChat(messages,onDelta);
+  const url=base.replace(/\/+$/,'').replace(/\/chat\/completions$/,'')+'/chat/completions';
+  let extra={}; if(state.api.headers){ try{ extra=JSON.parse(state.api.headers); }catch(_){} }
+  const headers=Object.assign({'Content-Type':'application/json'}, extra, {'Authorization':'Bearer '+key});
+  let res;
+  try{
+    res=await fetch(url,{
+      method:'POST', headers,
+      body:JSON.stringify({model:model||'gpt-4o-mini',messages,stream:!!onDelta,temperature:0.9})
+    });
+  }catch(e){
+    const m=String(e&&e.message||e);
+    apiState(false,'无法连接接口');
+    if(/failed to fetch|networkerror|load failed|err_/i.test(m)){
+      throw new Error('无法连接接口（多半是浏览器跨域拦截）。点右上角「API 设置」→「检测连接」查看原因，或下载本地代理脚本用 http://localhost:8787/v1');
+    }
+    throw e;
+  }
+  if(!res.ok){
+    apiState(false,'调用失败 HTTP '+res.status);
+    let t=(await res.text()).slice(0,200);
+    if(res.status===401||res.status===403) t+='  ← Key 无效或无权限';
+    else if(res.status===404) t+='  ← 地址或模型名不对（地址应填到 /v1 为止）';
+    else if(res.status===429) t+='  ← 限流或余额不足';
+    throw new Error('HTTP '+res.status+' '+t);
+  }
+  apiState(true,'已接入模型');
+  if(!onDelta||!res.body){ const j=await res.json(); return j.choices?.[0]?.message?.content||''; }
+  const reader=res.body.getReader(), dec=new TextDecoder();
+  let buf='', full='';
+  while(true){
+    const {done,value}=await reader.read();
+    if(done) break;
+    buf+=dec.decode(value,{stream:true});
+    const lines=buf.split('\n'); buf=lines.pop();
+    for(const line of lines){
+      const t=line.trim(); if(!t.startsWith('data:')) continue;
+      const d=t.slice(5).trim(); if(d==='[DONE]') return full;
+      try{
+        const j=JSON.parse(d);
+        const piece=j.choices?.[0]?.delta?.content||'';
+        if(piece){ full+=piece; onDelta(piece); }
+      }catch(_){}
+    }
+  }
+  return full;
+}
+function mockChat(messages,onDelta){
+  const user=[...messages].reverse().find(m=>m.role==='user')?.content||'';
+  let out;
+  if(/剧情摘要/.test(user)){
+    out='【本章剧情】林见微按计划行动，先后确认了两处线索；与祁掌柜的交锋中他选择装傻，但已被对方记住。\n【人物】林见微：获得半枚墨玉棋子，开始被商会盯上；祁掌柜：察觉异常但暂未撕破脸。\n【伏笔】棋子缺三枚，说明另有人在收集；墙角的划痕未解释。\n【设定】墨砚城宵禁制度、商会暗中做灵脉质押。';
+  } else if(/前情总纲/.test(user)){
+    out='自经脉尽废被逐出宗门后，林见微寄居墨砚城外城渡口，靠抄书为生。三年来他默默记住了城中许多人的话。一次夜行中他得到半枚墨玉棋子，随后陆续发现有人因“说过的话”而遭遇不测。玄天宗掌门谢无咎派人四处找他，北境商会也开始注意到这个不起眼的抄书人。他与祁掌柜多次交锋，双方都在试探对方知道的底细。目前他尚未弄清棋子与玄机，也尚未弄清楚三年前那场洗脉事故的真相。';
+  } else if(/下一章原定安排|“下一章”方向|个彼此不同的/.test(user)){
+    const base=[
+      {title:'夜行牌',summary:'为弄到通行内城的夜行牌，林见微不得不替祁掌柜做一件事。交手中他第一次“用话杀人”，得手后却在现场看见玄天宗的标记。结尾：他意识到自己可能被人当成刀使了。',reason:'把刚获得的能力第一次真正用上，同时把两个势力拉到同一场景。'},
+      {title:'缺的那两枚',summary:'林见微查出墨玉棋子共缺三枚，其中一枚曾在二十年前的洗脉事故现场出现过。他去找当年的见证人，人却在前一夜死了。结尾：死者桌上摆着第二枚棋子。',reason:'直接推进主线悬念，把个人旧事和当前危局接到一起。'},
+      {title:'抄书人的账本',summary:'本章节奏放缓。林见微整理自己三年来记下的“别人的话”，其中一句与旧案有关，他第一次开始害怕自己的记性。祁掌柜登门送来一份看似好意的差事。结尾：差事的地址，是他三年前被逐出宗门那天去过的地方。',reason:'给读者一段喘息，同时强化主角的缺陷与恐惧，为下一轮冲突积蓄力量。'}
+    ];
+    let n=parseInt((user.match(/请给出\s*(\d+)\s*个/)||[])[1])||3;
+    out=JSON.stringify(base.slice(0,Math.max(1,n)));
+  } else if(/只输出 JSON 数组/.test(user)){
+    out='[]';
+  } else {
+    // 演示模式：把梗概要点逐条写成段落，便于验证覆盖核对
+    const g=(user.match(/【本章梗概（必须逐点落地）】\n([\s\S]*?)\n\n/)||[])[1]||'';
+    const pts=g.split(/[\n；;]+/).map(s=>s.replace(/^\s*[-*·•\d.、)）]+/,'').trim()).filter(s=>s.length>1&&s.length<80);
+    const open=['夜色像一层浸了水的墨，慢慢渗进城墙的裂缝里。','雨停在半夜，檐角的水滴一声一声，敲在青石上，显得整条巷子格外空。','风从巷口灌进来，把挂在门前的旧灯笼吹得轻轻打旋。'];
+    const close='远处传来一声极轻的钟响。那钟本该在卯时才敲。两个人都听见了；两个人的脸色，在同一刻变了。\n\n——这一夜，还远没有结束。';
+    const paras=[open[Math.floor(Math.random()*open.length)]];
+    (pts.length?pts:['他在廊下站了很久，手里的灯被风压得很低。']).forEach(p=>{
+      paras.push(p.replace(/^[^，。；]{0,6}，/,'')+'。灯影晃了一下，他下意识地把左手往袖子里缩了缩——那里缺了小半截指头。');
+      paras.push('“你还是来了。”身后有人开口，声音不高，却让整条走廊安静下来。他没有回头，只是把灯往前递了递。');
+    });
+    paras.push(close);
+    out=paras.join('\n\n');
+  }
+  const pieces=out.match(/[\s\S]{1,28}/g)||[out];
+  return new Promise(resolve=>{
+    if(!onDelta){ resolve(out); return; }
+    let i=0;
+    const timer=setInterval(()=>{
+      if(i>=pieces.length){ clearInterval(timer); resolve(out); return; }
+      onDelta(pieces[i++]);
+    },26);
+  });
+}
+
+/* =========================================================
+   导出 / 备份 / 设置
+   ========================================================= */
+$('#btnExport').onclick=()=>exportNovelTxt();
+$('#btnProject').onclick=()=>{
+  openDlg(`<h3>项目备份 · ${esc(state.meta.title||'未命名作品')}</h3>
+    <div class="hint">把这本书（设定、世界书、角色卡、章节、正文）导出成一个 JSON 文件，方便备份或换电脑。<br>导入时会作为书架里的一本<strong>新书</strong>加入，不会覆盖现有内容。</div>`,
+  [{label:'导入为新书',fn:()=>{ $('#fileBook').click(); return true; }},
+   {label:'导出本书',cls:'primary',fn:()=>{ exportBook(currentId); return true; }}]);
+};
+/* 从备份文件导入为一本新书（不覆盖当前作品） */
+async function importBookFile(file){
+  try{
+    const d=JSON.parse(await file.text());
+    if(!d||typeof d!=='object') throw new Error('文件内容不是有效的项目备份');
+    const title=(d.meta&&d.meta.title)||file.name.replace(/\.[^.]*$/,'').replace(/\.墨砚项目$/,'')||'导入的作品';
+    const id=createBook(title,(d.meta&&d.meta.genre)||'玄幻修真');
+    try{ localStorage.setItem(LS_BOOK+id, JSON.stringify(d)); }
+    catch(e){ toast('导入失败：浏览器存储空间不足'); return; }
+    const it=libItem(id);
+    it.words=wordsOf(d); it.chapters=(d.outline||[]).length; it.done=doneOf(d);
+    it.logline=(d.meta&&d.meta.logline)||'';
+    saveLib(); renderShelf();
+    toast('已导入《'+it.title+'》，共 '+(d.outline||[]).length+' 章');
+  }catch(err){ toast('导入失败：'+err.message); }
+}
+$('#fileBook').onchange=async e=>{
+  const f=e.target.files[0]; e.target.value='';
+  if(f) await importBookFile(f);
+};
+/* 封面设置 */
+$('#fileCover').onchange=async e=>{
+  const f=e.target.files[0]; e.target.value='';
+  if(!f||!coverTarget) return;
+  const data=await fileToAvatar(f,520);
+  const it=libItem(coverTarget);
+  if(it&&data){ it.cover=data; it.updated=Date.now(); saveLib(); renderShelf(); toast('封面已更新'); }
+  else if(!data) toast('图片读取失败');
+  coverTarget='';
+};
+const dlgCfg=$('#dlgConfig');
+const API_PRESETS=[
+  ['DeepSeek','https://api.deepseek.com/v1','deepseek-chat'],
+  ['OpenAI','https://api.openai.com/v1','gpt-4o-mini'],
+  ['硅基流动','https://api.siliconflow.cn/v1','Qwen/Qwen2.5-72B-Instruct'],
+  ['本地 Ollama','http://localhost:11434/v1','qwen2.5:14b'],
+  ['本地代理','http://localhost:8787/v1','deepseek-chat']
+];
+function applyPreset(i){
+  const p=API_PRESETS[i]; if(!p) return;
+  $('#cfg-base').value=p[1]; $('#cfg-model').value=p[2];
+  if(i===4) $('#cfg-key').value='local';
+  toast('已填入 '+p[0]+' 配置，点「检测连接」验证');
+}
+$('#cfgPresetDeepseek').onclick=()=>applyPreset(0);
+$('#cfgPresetOpenai').onclick=()=>applyPreset(1);
+$('#cfgPresetSilicon').onclick=()=>applyPreset(2);
+$('#cfgPresetOllama').onclick=()=>applyPreset(3);
+$('#cfgPresetProxy').onclick=()=>applyPreset(4);
+$('#btnConfig').onclick=()=>{
+  $('#cfg-base').value=state.api.base||''; $('#cfg-key').value=state.api.key||''; $('#cfg-model').value=state.api.model||'';
+  $('#cfg-headers').value=state.api.headers||'';
+  $('#cfgTestOut').innerHTML='';
+  dlgCfg.showModal();
+};
+$('#cfgCancel').onclick=()=>dlgCfg.close();
+/* 右上角 ✕：保存并关闭（避免填完 Key 反向丢数据） */
+const cfgXBtn=$('#cfgX');
+if(cfgXBtn) cfgXBtn.onclick=()=>{ const s=$('#cfgSave'); if(s) s.click(); else dlgCfg.close(); };
+function cfgValues(){
+  return {base:$('#cfg-base').value.trim(), key:$('#cfg-key').value.trim(),
+    model:$('#cfg-model').value.trim(), headers:$('#cfg-headers').value.trim()};
+}
+$('#cfgSave').onclick=()=>{
+  const v=cfgValues();
+  let hdr='';
+  if(v.headers){ try{ JSON.parse(v.headers); hdr=v.headers; }catch(e){ toast('额外请求头不是合法 JSON，已忽略'); } }
+  state.api={base:v.base,key:v.key,model:v.model,headers:hdr};
+  save(); dlgCfg.close();
+  $('#statusText').textContent = state.api.key?'已接入模型':'演示模式';
+  toast(state.api.key?'已保存并接入':'已保存（未填 Key，仍为演示模式）');
+};
+/* ---------------- API 连通性检测 ---------------- */
+function stepHTML(icon,title,detail){ return `<div class="step"><span class="ic">${icon}</span><div class="tx"><b>${title}</b>${detail?'<div style="color:var(--muted);margin-top:2px">'+detail+'</div>':''}</div></div>`; }
+function diagnose(err,base){
+  const msg=String((err&&err.message)||err||'');
+  const low=msg.toLowerCase();
+  const tips=[];
+  if(/failed to fetch|networkerror|load failed|err_/.test(low)){
+    tips.push('<b>浏览器直连被拦（最常见的报错）</b>：本地打开 HTML 时请求被当成跨域，目标接口没返回 CORS 头，所以浏览器直接把结果丢掉了。这不是 Key 错，也不是地址错。');
+    tips.push('解决办法（任选一）：① 点下方「下载本地代理脚本」，按说明跑 <code class="inl">node proxy.mjs</code>，再把地址改成 <code class="inl">http://localhost:8787/v1</code>；② 换一个允许浏览器直连的服务商；③ 用 VS Code Live Server 等把页面跑在 http:// 下（能改善部分情况，但不能绕过服务商的 CORS 限制）。');
+    tips.push('另外检查：地址是否有多余空格、是否误写 https/http、是否被浏览器插件（广告拦截 / 隐私保护）挡掉。');
+  } else if(/401|403|unauthorized|invalid.*key|api key/.test(low)){
+    tips.push('<b>Key 无效或没权限</b>：复制时可能带了空格、引号或换行；也可能 Key 已过期、余额不足、或被限制了 IP。');
+    tips.push('注意：若地址填了本地代理（localhost:8787），Key 应该写在 <code class="inl">proxy.mjs</code> 里，这里可以随便填。');
+  } else if(/404/.test(low)){
+    tips.push('<b>路径不对</b>：多数服务商需要带 <code class="inl">/v1</code>。正确形如 <code class="inl">https://api.deepseek.com/v1</code>，程序会自动拼上 <code class="inl">/chat/completions</code>，所以不要再手写这一截。');
+    tips.push('若模型名写错，部分服务商也会返回 404，请确认模型名与服务商一致。');
+  } else if(/429|rate limit|quota/.test(low)){
+    tips.push('<b>限流或余额不足</b>：稍等重试，或在服务商后台确认额度。');
+  } else if(/400|bad request|invalid.*model/.test(low)){
+    tips.push('<b>请求被拒</b>：通常是模型名写错，或该服务商不支持 <code class="inl">stream</code> 参数。可在下方验证中查看具体返回内容。');
+  } else if(/timeout|aborted/.test(low)){
+    tips.push('<b>超时</b>：网络不通或需要代理；本地 Ollama 未启动也会表现为连不上。');
+  } else {
+    tips.push('把下面的原始报错对照服务商文档核对；也可以点「下载本地代理脚本」用本地代理绕开浏览器限制。');
+  }
+  tips.push('原始地址：<code class="inl">'+(base||'（空）')+'</code>');
+  return '<div class="fixbox">'+tips.map(t=>'• '+t).join('<br>')+'</div>';
+}
+async function apiTest(){
+  const v=cfgValues();
+  const out=$('#cfgTestOut');
+  const rows=[];
+  const done=(ok,extra)=>{
+    out.innerHTML = (ok?'<div class="apiok"><b>✓ 连接正常</b>，可以直接出文了。</div>':'<div class="apibad"><b>✗ 连接失败</b>，请按下面的建议处理。</div>')
+      + rows.join('') + (extra||'');
+  };
+  if(!v.base){ rows.push(stepHTML('✗','地址为空','请先填写 Base URL，或点上方预设按钮')); done(false); return; }
+  if(!/^https?:\/\//.test(v.base)){ rows.push(stepHTML('✗','地址格式不对','必须以 http:// 或 https:// 开头')); done(false); return; }
+  if(/\s/.test(v.base)){ rows.push(stepHTML('!','地址中有空格','建议删掉空格后重试')); }
+  if(/\/chat\/completions\/?$/.test(v.base)) rows.push(stepHTML('!','地址包含了 /chat/completions','只需填到 /v1 即可，程序会自动拼接'));
+  if(!/\/v1\/?$/.test(v.base)) rows.push(stepHTML('!','地址未以 /v1 结尾','多数服务商需要 /v1，若你确实用的是别的后缀可忽略'));
+  const base=v.base.replace(/\/+$/,'').replace(/\/chat\/completions$/,'');
+  let hdr={};
+  if(v.headers){ try{ hdr=JSON.parse(v.headers); }catch(e){ rows.push(stepHTML('!','额外请求头不是合法 JSON','已忽略该项')); } }
+  const auth=Object.assign({'Content-Type':'application/json'}, hdr, v.key?{'Authorization':'Bearer '+v.key}:{});
+
+  // 步骤1：请求 /models
+  rows.push(stepHTML('…','测试模型列表…',''));
+  out.innerHTML='<div class="hint">正在检测…</div>';
+  let listOk=false, models=[];
+  try{
+    const ctl=new AbortController(); const to=setTimeout(()=>ctl.abort(),15000);
+    const r=await fetch(base+'/models',{headers:auth,signal:ctl.signal});
+    clearTimeout(to);
+    if(r.ok){ const j=await r.json(); models=(j.data||[]).map(m=>m.id||m.name||'').filter(Boolean); listOk=true; }
+    else if(r.status===404){ rows[rows.length-1]=stepHTML('!','该服务商没有 /models 接口','不影响正常使用，继续测下一步'); }
+    else { rows[rows.length-1]=stepHTML('!','模型列表返回 HTTP '+r.status,'不影响正常使用，继续测下一步'); }
+  }catch(e){ rows[rows.length-1]=stepHTML('!','模型列表请求未完成',esc(e.message)); }
+  if(listOk){
+    let det='';
+    if(models.length){
+      det='可用模型 '+models.length+' 个';
+      if(v.model&&models.includes(v.model)) det+='，已找到「'+esc(v.model)+'」';
+      else if(v.model) det+='<div style="color:var(--warn)">注意：列表里没有「'+esc(v.model)+'」，模型名可能写错了</div>';
+    }
+    rows[rows.length-1]=stepHTML('✓','模型列表获取成功',det);
+  }
+
+  // 步骤2：非流式对话
+  rows.push(stepHTML('…','测试普通请求…',''));
+  out.innerHTML='<div class="hint">正在检测…</div>';
+  let chatOk=false, reply='';
+  try{
+    const ctl=new AbortController(); const to=setTimeout(()=>ctl.abort(),45000);
+    const r=await fetch(base+'/chat/completions',{method:'POST',headers:auth,signal:ctl.signal,
+      body:JSON.stringify({model:v.model||'gpt-4o-mini',messages:[{role:'user',content:'回复“OK”两个字即可'}],max_tokens:10})});
+    clearTimeout(to);
+    if(!r.ok){
+      const t=(await r.text()).slice(0,300);
+      rows[rows.length-1]=stepHTML('✗','HTTP '+r.status,esc(t));
+    } else {
+      const j=await r.json();
+      reply=(j.choices&&j.choices[0]&&j.choices[0].message&&j.choices[0].message.content)||'';
+      chatOk=true;
+      rows[rows.length-1]=stepHTML('✓','普通请求成功','模型回话：'+esc(String(reply).slice(0,40)));
+    }
+  }catch(e){ rows[rows.length-1]=stepHTML('✗','普通请求失败',esc(e.message)); }
+
+  // 步骤3：流式
+  if(chatOk){
+    rows.push(stepHTML('…','测试流式输出…',''));
+    out.innerHTML='<div class="hint">正在检测…</div>';
+    try{
+      const ctl=new AbortController(); const to=setTimeout(()=>ctl.abort(),45000);
+      const r=await fetch(base+'/chat/completions',{method:'POST',headers:auth,signal:ctl.signal,
+        body:JSON.stringify({model:v.model||'gpt-4o-mini',messages:[{role:'user',content:'数到三'}],stream:true,max_tokens:20})});
+      clearTimeout(to);
+      if(r.ok&&r.body){
+        const rd=r.body.getReader(), dec=new TextDecoder(); let got=0, buf='';
+        while(true){ const {done,value}=await rd.read(); if(done) break;
+          buf+=dec.decode(value,{stream:true});
+          for(const ln of buf.split('\n')) if(ln.trim().startsWith('data:')) got++;
+          if(got>3) break;
+        }
+        rows[rows.length-1]= stepHTML('✓','流式输出可用','不必等整章写完才开始显示');
+      } else {
+        rows[rows.length-1]=stepHTML('!','流式不可用（HTTP '+r.status+'）','程序会自动退回非流式，正文一次性显示，不影响使用');
+      }
+    }catch(e){ rows[rows.length-1]=stepHTML('!','流式测试失败',esc(e.message)+'（将自动退回非流式）'); }
+  }
+  const finalOk = chatOk;
+  done(finalOk, finalOk?'':diagnose({message: (rows.join(' ').match(/HTTP \d+|Failed to fetch|abort/i)||[''])[0]}, v.base));
+}
+$('#cfgTest').onclick=()=>{ apiTest(); };
+/* ---------------- 本地代理脚本（解决 CORS） ---------------- */
+const PROXY_JS=`// 墨砚 · 本地 API 代理  ——  解决浏览器直连被 CORS 拦截的问题
+// 用法：
+//   1) 把本文件保存为 proxy.mjs
+//   2) 把下面的 TARGET 改成你的接口地址，KEY 改成你的密钥
+//   3) 在本目录执行：node proxy.mjs   （需要 Node 18+，无需安装任何依赖）
+//   4) 回到网页「API 设置」→ 点「本地代理」预设 → 地址 http://localhost:8787/v1
+//      此时网页里的 Key 可随便填（真正的 Key 在下面，不会进浏览器）
+
+const TARGET = process.env.TARGET || 'https://api.deepseek.com/v1';   // ← 改成你的服务商地址（含 /v1）
+const KEY    = process.env.KEY    || process.env.API_KEY || '';        // ← 改成你的 API Key
+const PORT   = Number(process.env.PORT || 8787);
+
+import http from 'node:http';
+import https from 'node:https';
+import { URL } from 'node:url';
+
+const server = http.createServer((req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Headers', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
+  if (req.method === 'OPTIONS') { res.writeHead(204); return res.end(); }
+
+  const target = new URL(TARGET.replace(/\/+$/, '') + req.url.replace(/^\/v1/, ''));
+  const lib = target.protocol === 'https:' ? https : http;
+
+  const headers = { 'Content-Type': 'application/json' };
+  headers['Authorization'] = 'Bearer ' + (KEY || (req.headers.authorization||'').replace(/^Bearer\s+/i,''));
+
+  const up = lib.request({
+    hostname: target.hostname,
+    port: target.port || (target.protocol === 'https:' ? 443 : 80),
+    path: target.pathname + target.search,
+    method: req.method,
+    headers
+  }, (upRes) => {
+    res.writeHead(upRes.statusCode, upRes.headers);
+    upRes.pipe(res);
+  });
+
+  up.on('error', (e) => { res.writeHead(502, {'Content-Type':'application/json'}); res.end(JSON.stringify({error:{message:'代理转发失败: '+e.message}})); });
+  req.pipe(up);
+});
+
+server.listen(PORT, () => {
+  console.log('✓ 墨砚代理已启动: http://localhost:' + PORT + '/v1  →  ' + TARGET);
+  if (!KEY) console.log('提示：未设置 KEY，将使用网页里填写的 Key');
+});
+`;
+$('#cfgProxy').onclick=()=>{
+  openDlg(`<h3>用本地代理绕过浏览器限制</h3>
+    <div class="hint">浏览器直连 API 失败时，九成是 CORS（跨域）被拦：接口是外部域名，而本页面只是一个本地文件，服务商没返回允许跨域的响应头，浏览器就把结果丢掉了。这不是 Key 错，也不是地址错。<br>下面这个代理只跑在你本机，Key 不进浏览器，也不上传任何服务器。</div>
+    <div class="fixbox" style="margin-top:14px">
+      <b>第 1 步</b>　下载 <code class="inl">proxy.mjs</code>（需 Node 18+，无需安装任何依赖）<br>
+      <b>第 2 步</b>　用记事本打开，把顶部 <code class="inl">TARGET</code> 改成你的接口地址（含 /v1），<code class="inl">KEY</code> 改成你的密钥<br>
+      <b>第 3 步</b>　在该目录执行 <code class="inl">node proxy.mjs</code>，看到「代理已启动」即可<br>
+      <b>第 4 步</b>　回到「API 设置」，地址填 <code class="inl">http://localhost:8787/v1</code>，再点「检测连接」
+    </div>
+    <div class="hint" style="margin-top:10px">Windows 也可直接双击运行：<code class="inl">node proxy.mjs</code></div>`,
+    [{label:'关闭'},
+     {label:'下载 proxy.mjs', fn:()=>{ download('proxy.mjs', PROXY_JS, 'text/javascript'); toast('已下载 proxy.mjs，把它放到任意文件夹，改好 TARGET 与 KEY 后运行 node proxy.mjs'); return false; }},
+     {label:'填入代理地址', cls:'primary', fn:()=>{
+        $('#cfg-base').value='http://localhost:8787/v1';
+        if(!$('#cfg-model').value) $('#cfg-model').value='deepseek-chat';
+        $('#cfg-key').value='local';
+        toast('已填入 http://localhost:8787/v1，别忘了点「检测连接」');
+        return true;
+     }}]);
+};
+
+/* =========================================================
+   AI 一键填写（所有文本输入）
+   ========================================================= */
+function fieldContext(extra){
+  const m=state.meta, out=[];
+  if(m.title) out.push('书名：'+m.title);
+  if(m.genre) out.push('类型：'+m.genre);
+  if(m.pov) out.push('视角：'+m.pov);
+  if(m.mainline) out.push('主线与结局：'+m.mainline);
+  if(m.extra) out.push('补充设定：'+m.extra);
+  const w=state.world.filter(e=>e.enabled&&e.content.trim()).slice(0,25)
+    .map(e=>'◆ '+e.comment+'：'+e.content.replace(/\s+/g,' ').slice(0,120));
+  if(w.length) out.push('世界观：\n'+w.join('\n'));
+  const c=state.chars.filter(x=>x.enabled).slice(0,10)
+    .map(x=>'◆ '+x.name+(x.description?'（'+x.description.replace(/\s+/g,' ').slice(0,80)+'）':''));
+  if(c.length) out.push('角色：\n'+c.join('\n'));
+  if(extra) out.push(extra);
+  return out.join('\n') || '（作者还未填写任何设定）';
+}
+const AI_SYS='你是一位资深网络小说策划，直接给出可直接使用的成品文本，不要解释、不要客套、不要markdown标记。';
+const AI_NOTEFILL='若作者已填内容，请在其基础上补充或优化，保持风格与设定一致；不要推翻已有设定。';
+const AI_FIELDS=[
+  {sel:'#f-title', name:'书名',
+   user:()=>`根据以下信息，给这本书起 3 个候选书名（不超 8 字，有画面感、能体现题材与主线悬念）。只输出 3 行，每行一个书名，不要编号。\n${fieldContext()}`},
+  {sel:'#f-mainline', name:'主线与结局',
+   user:()=>`为这本书写「主线与结局」：200-350 字，写清主角的最终目标、三个关键转折、以及结局走向（哪怕只是方向）。写得具体可执行，不要笼统。\n${fieldContext()}`},
+  {sel:'#f-extra', name:'补充设定',
+   user:()=>`为这本书补写「补充设定/关键词」：6-10 条，涵盖时间线、地理、货币与物价、组织、禁忌、社会规则等。一行一条，以“- ”开头，每条不超 40 字。\n${fieldContext()}`},
+  {sel:'#f-style', name:'文风描述',
+   user:()=>`根据这本书的题材与故事，写一段可直接用作AI写作约束的「文风描述」：100-160 字，说清句式长短、叙事节奏、对话风格、比喻使用频率、情感表达方式，并明确要避免什么。只输出这段描述。\n${fieldContext()}`},
+  {sel:'#f-sample', name:'文风样例',
+   user:()=>`按下列设定，写一段 200-300 字的「文风样例」（可直接作为风格范本）。要求：包含场景描写、动作与一处对话；不要写剧情高潮，随意取一个日常场景即可；不要加任何说明文字。\n${fieldContext()}`},
+  {sel:'#f-rules', name:'写作法则',
+   user:()=>`为这本书写一套「写作法则」（硬性约束 AI 的规则）：6-10 条，编号排列（如“1. ”），每条约 20-40 字。应涵盖：每章必须有推进与钩子、严禁OOC、不得临时新增关键设定、禁止信息堆砌式旁白、禁止 AI 腔总绗句等。只输出编号列表。\n${fieldContext()}`},
+  {sel:'#f-banned', name:'禁用词',
+   user:()=>`列举 15-25 个在小说中最容易产生「AI 腔」或陈词滥调的词语/表达（如：总而言之、五味杂陈、命运的齿轮），用英文逗号分隔成一行。只输出这一行。`}
+];
+async function aiFill(f){
+  const el=document.querySelector(f.sel); if(!el) return;
+  setBusy(true,`AI 正在写「${f.name}」…`);
+  try{
+    const out=await chat([{role:'system',content:AI_SYS+'\n'+AI_NOTEFILL},
+      {role:'user',content:f.user()}]);
+    let t=String(out||'').trim().replace(/^```[a-z]*\s*/i,'').replace(/```$/,'').trim();
+    el.value=t;
+    el.dispatchEvent(new Event('input',{bubbles:true}));
+    el.dispatchEvent(new Event('change',{bubbles:true}));
+    save(); toast('已生成「'+f.name+'」');
+    el.focus();
+  }catch(e){ toast('生成失败：'+e.message); }
+  finally{ setBusy(false); }
+}
+function aiButton(label,title,fn,cls){
+  const b=document.createElement('button');
+  b.type='button'; b.className=(cls||'aifill'); b.textContent=label; b.title=title||'AI 填写';
+  b.onclick=e=>{ e.stopPropagation(); fn(b); };
+  return b;
+}
+function installAiFields(){
+  AI_FIELDS.forEach(f=>{
+    const el=document.querySelector(f.sel); if(!el||el._ai) return;
+    el._ai=true;
+    const lbl=el.previousElementSibling;
+    const b=aiButton('✦ AI', '让 AI 根据已有设定填写：'+f.name);
+    b.onclick=e=>{ e.stopPropagation(); aiFill(f); };
+    if(lbl&&lbl.tagName==='LABEL') lbl.appendChild(b);
+    else el.parentNode.insertBefore(b, el);
+  });
+}
+/* 世界书条目：一键生成内容与关键词 */
+async function aiFillWorldEntry(i){
+  const e=state.world[i]; if(!e) return;
+  setBusy(true,'AI 正在补全世界观条目…');
+  try{
+    const user=`作者正在写一份小说设定集（世界书）。请为下面这个条目写出完整的设定内容与触发关键词。
+条目名称：${e.comment||'（未命名）'}
+${e.content?('已有内容（请扩充、不要推翻）：\n'+e.content.slice(0,600)+'\n'):''}\n${fieldContext()}
+
+要求：
+- content：150-300 字的设定描述，具体、可直接约束写作；不写空话；不引入与已有设定矛盾的内容
+- keys：3-6 个触发关键词，逗号分隔，应包含该条目最可能被文中提到的称呼
+只输出 JSON，不要解释、不要代码块标记：
+{"content":"设定内容","keys":"关键词1,关键词2"}`;
+    const j=parseLoose(await chat([{role:'system',content:AI_SYS},{role:'user',content:user}]));
+    if(!j||typeof j!=='object') throw new Error('解析失败');
+    if(j.content) e.content=String(j.content);
+    if(j.keys) e.keys=toKeys(j.keys);
+    renderWorld(); save(); updateCounters(); toast('已补全条目');
+  }catch(err){ toast('失败：'+err.message); }
+  finally{ setBusy(false); }
+}
+/* 角色卡：一键补全空字段 */
+async function aiFillChar(i){
+  const c=state.chars[i]; if(!c) return;
+  setBusy(true,'AI 正在补全角色卡…');
+  try{
+    const user=`作者正在写小说角色卡。请补全下面这个角色的设定。
+角色名：${c.name||'（未命名）'}
+已有描述：${c.description?c.description.slice(0,400):'（空）'}
+已有性格：${c.personality?c.personality.slice(0,300):'（空）'}
+${fieldContext()}
+
+要求：
+- description：100-180 字，写身份、外貌特征、经历与当前处境
+- personality：80-150 字，写性格与行为习惯，包含一个具体的小怪癖或弱点
+- speech：60-100 字，说话风格与口癫，最好举一例
+- scenario：50-100 字，当前处境及与主角的关系
+- example：80-150 字的示例对话，用“角色名：台词”的格式，体现这个角色的说话风格（写 2-3 轮即可）
+- 所有内容必须与已有世界观和设定相容；已有内容请保留并优化，不要推翻
+只输出 JSON，不要解释、不要代码块标记：
+{"description":"...","personality":"...","speech":"...","scenario":"...","example":"..."}`;
+    const j=parseLoose(await chat([{role:'system',content:AI_SYS},{role:'user',content:user}]));
+    if(!j||typeof j!=='object') throw new Error('解析失败');
+    ['description','personality','speech','scenario','example'].forEach(k=>{ if(j[k]) c[k]=String(j[k]); });
+    renderChars(); save(); toast('已补全角色卡');
+  }catch(err){ toast('失败：'+err.message); }
+  finally{ setBusy(false); }
+}
+
+/* 章节标题：AI 起候选 */
+async function aiChapterTitle(){
+  const i=state.current, ch=state.chapters[i]||{};
+  if(!ch.content){ toast('本章还没有正文，先出文再来起标题'); return; }
+  setBusy(true,'AI 正在起标题…');
+  try{
+    const user=`请为下面这一章起 5 个候选标题（每个 4-14 字，有画面感或悬念感，不加“第X章”前缀，不剧透结局）。
+只输出 5 行，每行一个，不要编号、不要解释。
+
+${fieldContext()}
+【本章梗概】${(state.outline[i]&&state.outline[i].summary)||'（无）'}
+【本章正文】
+${ch.content.slice(0,3000)}`;
+    const out=await chat([{role:'system',content:AI_SYS},{role:'user',content:user}]);
+    const list=String(out||'').split('\n').map(s=>s.replace(/^[\s\d.、)）\-*•]+/,'').trim()).filter(Boolean).slice(0,5);
+    if(!list.length) throw new Error('未解析出标题');
+    openDlg(`<h3>候选章节标题</h3><div class="hint">点「用这个」直接应用为本章标题，也可以先复制走。</div>`+
+      list.map((t,n)=>`<div class="item"><div class="item-head"><span class="badge">${n+1}</span><span class="nm">${esc(t)}</span>
+        <div class="spacer"></div><button class="btn xs primary" data-t="${n}">用这个</button></div></div>`).join(''),
+      [{label:'关闭'}]);
+    setTimeout(()=>{
+      $$('#dlgBody [data-t]').forEach(b=>b.onclick=()=>{
+        const t=list[+b.dataset.t];
+        $('#chapterTitle').value=t;
+        ensureChapter(i).title=t;
+        if(state.outline[i]) state.outline[i].title=t;
+        save(); renderChapters(); renderOutline(); $('#dlg').close(); toast('标题已应用');
+      });
+    },30);
+  }catch(e){ toast('失败：'+e.message); }
+  finally{ setBusy(false); }
+}
+/* 梗概草稿：根据主线 + 世界观 + 已有进度，列出本章要点填入输入框 */
+async function aiDraftGist(){
+  const i=state.current;
+  ensureSlot(i);   // 没有章节也能让 AI 先给个方向
+  const ol=state.outline[i], nx=state.outline[i+1];
+  setBusy(true,'AI 正在构思本章梗概…');
+  try{
+    const user=`请为第 ${i+1} 章设计本章要写的内容，供作者确认后写作。
+要求：
+- 输出 3-6 行，每行以“- ”开头，每行一个要点，20-45 字
+- 必须推进「主线与结局」，并与世界观设定相容
+- 按时间顺序排列：本章开场 → 关键冲突 → 结尾留下钩子
+- 不要写具体对话原句，只写发生了什么
+只输出这些行，不要标题，不要解释。
+
+${fieldContext()}
+【本章已有梗概】${ol.title||'（未定）'}：${ol.summary||'（未填，可自行设计）'}
+${nx?`【下一章（本章不可越过）】${nx.title}：${nx.summary}`:''}
+【已编入目录的进度】已编入 ${committedCount()} 章（这些是既成事实）
+${openHooks().length?`【待回收伏笔（尽量让本章推进或回收其中一条，不要视而不见）】\n${openHooks().slice(0,8).map(h=>'- '+h.text+'（'+hookLabel(h)+'）').join('\n')}`:''}
+【已写内容提要】
+${historyDigest(i)}`;
+    const out=await chat([{role:'system',content:AI_SYS},{role:'user',content:user}]);
+    const t=String(out||'').trim().replace(/^```[a-z]*\s*/i,'').replace(/```$/,'').trim();
+    const lines=t.split('\n').map(s=>s.trim()).filter(Boolean)
+      .map(s=>/^[-*·•]/.test(s)?s:'- '+s.replace(/^[\d.、)）\-*•]+\s*/,''));
+    if(!lines.length) throw new Error('未解析出内容');
+    $('#chatInput').value=lines.join('\n');
+    $('#chatInput').focus();
+    toast('已生成 '+lines.length+' 条梗概要点，可修改后发送');
+  }catch(e){ toast('失败：'+e.message); }
+  finally{ setBusy(false); }
+}
+
+/* =========================================================
+   初始化：先开书架，再决定进哪本书
+   ========================================================= */
+bindForms();
+renderStylePresets();
+$('#btnAiTitle').onclick=()=>aiChapterTitle();
+$('#btnDraftGist').onclick=()=>aiDraftGist();
+$('#status').title='点击打开 API 设置并检测连接';
+$('#status').onclick=()=>$('#btnConfig').click();
+$('#btnShelf').onclick=()=>showShelf();
+$('#btnNewBook').onclick=()=>newBookDialog();
+$('#btnImportBook').onclick=()=>$('#fileBook').click();
+$('#shelfSearch').addEventListener('input',renderShelf);
+$('#shelfSort').addEventListener('change',renderShelf);
+
+loadLib();
+/* 旧版本的单项目数据 → 自动放进书架，不丢东西 */
+if(!lib.items.length){
+  try{
+    const legacy=localStorage.getItem(LS_KEY);
+    if(legacy){
+      const d=JSON.parse(legacy);
+      const id=createBook((d.meta&&d.meta.title)||'我的第一本书', (d.meta&&d.meta.genre)||'玄幻修真');
+      try{ localStorage.setItem(LS_BOOK+id, legacy); }catch(e){ console.warn(e); }
+      const it=libItem(id);
+      it.words=wordsOf(d); it.chapters=(d.outline||[]).length; it.done=doneOf(d);
+      it.logline=(d.meta&&d.meta.logline)||'';
+      saveLib();
+      setTimeout(()=>toast('已把你的旧项目放进书架'),600);
+    }
+  }catch(e){ console.warn('migrate failed',e); }
+}
+if(lib.active && libItem(lib.active)) openBook(lib.active);
+else if(lib.items.length) openBook(lib.items[0].id);
+else showShelf();
+
+/* =========================================================
+   响应式：窄屏顶部菜单开合
+   ========================================================= */
+(function bindResponsiveMenu(){
+  const bind=(btnId,panelId)=>{
+    const b=$('#'+btnId), p=$('#'+panelId);
+    if(!b||!p) return;
+    b.onclick=(e)=>{
+      e.stopPropagation();
+      p.classList.toggle('show');
+      b.textContent = p.classList.contains('show') ? '✕' : '⋯';
+    };
+    // 点面板外部 / 选完菜单项后自动收起
+    p.addEventListener('click',ev=>{
+      if(ev.target.closest('button')) { p.classList.remove('show'); b.textContent='⋯'; }
+    });
+    document.addEventListener('click',ev=>{
+      if(!p.classList.contains('show')) return;
+      if(ev.target===b||p.contains(ev.target)) return;
+      p.classList.remove('show'); b.textContent='⋯';
+    });
+  };
+  bind('btnMenu','editorActions');
+  bind('btnMenuShelf','shelfActions');
+  // 视口变宽时收起菜单，避免状态残留
+  let raf=0;
+  window.addEventListener('resize',()=>{
+    cancelAnimationFrame(raf);
+    raf=requestAnimationFrame(()=>{
+      if(window.innerWidth>900){
+        ['editorActions','shelfActions'].forEach(id=>{ const el=$('#'+id); if(el) el.classList.remove('show'); });
+        ['btnMenu','btnMenuShelf'].forEach(id=>{ const el=$('#'+id); if(el) el.textContent='⋯'; });
+      }
+    });
+  });
+})();
+
+</script>
+</body>
+</html>

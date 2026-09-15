@@ -1,0 +1,50 @@
+# ============================================================
+# DreamWeaver · 幻梦织者 —— Git 忽略规则
+# 注意：构建产物 index.html 是「要提交」的（Pages 直接发布它），所以不在此列。
+# ============================================================
+
+# 依赖
+node_modules/
+
+# 发布目录（由 npm run site 生成）
+dist/
+_site/
+
+# 本地预览与调试
+*.local.html
+.cache/
+
+# 日志与临时文件
+*.log
+tmp-*.js
+.tmp/
+
+# 旧的诊断脚本（留在本地即可，不必污染仓库）
+dbg*.js
+peek.js
+show*.js
+checkhtml.js
+checkleft.js
+smoke.js
+test-smoke.js
+test-smoke2.js
+body-diag*.js
+diag-cast.js
+
+# 系统与编辑器
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
+*~
+
+# 私有配置 —— 千万不要把 API Key 提交上去
+.env
+.env.*
+api-key.txt
+local-config.*
+
+# 打包产物
+*.zip

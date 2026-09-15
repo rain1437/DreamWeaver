@@ -1,0 +1,151 @@
+name: 打包 Android APK（可选 · 手动触发）
+
+# 用途：想要一个能直接安装、能转发给别人的 .apk 时用这个。
+# 产出是 debug 签名的 APK（手机需允许「安装未知来源应用」）。
+#
+# 触发：仓库 Actions 页面 → 左侧选「打包 Android APK（可选 · 手动触发）」→ Run workflow
+#
+# ⚠ 关于之前那次失败
+#   "The process '.../cmdline-tools/16.0/bin/sdkmanager' failed with exit code 1"
+#   那是第三方 action android-actions/setup-android 自己调 sdkmanager 导致的，
+#   跟我们的代码无关。而 GitHub 的 ubuntu 运行器【本来就预装了 Android SDK】
+#   （报错里出现的 /usr/local/lib/android/sdk 就是它），所以那个 action 纯属多余。
+#   现在改成直接用预装 SDK，不再依赖它。
+
+on:
+  workflow_dispatch:
+    inputs:
+      app_id:
+        description: '应用包名（默认 com.dreamweaver.studio）'
+        required: false
+        default: 'com.dreamweaver.studio'
+      app_name:
+        description: '应用显示名（桌面图标下的名字）'
+        required: false
+        default: 'DreamWeaver'
+
+permissions:
+  contents: read
+
+jobs:
+  apk:
+    name: 构建 APK
+    runs-on: ubuntu-latest
+
+    env:
+      APP_NAME: ${{ github.event.inputs.app_name || 'DreamWeaver' }}
+      APP_ID: ${{ github.event.inputs.app_id || 'com.dreamweaver.studio' }}
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 准备 Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 准备 Java 17（Gradle / AGP 需要）
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      # 只检查、不安装 —— 运行器镜像已带 SDK，这一步只是把环境打印出来便于排错
+      - name: 确认预装的 Android SDK
+        run: |
+          echo "ANDROID_HOME=${ANDROID_HOME:-<未设置>}"
+          echo "ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT:-<未设置>}"
+          echo "JAVA_HOME=$JAVA_HOME"
+          if [ -z "${ANDROID_HOME:-}" ] || [ ! -d "$ANDROID_HOME" ]; then
+            echo "::error::运行器里找不到 Android SDK，无法继续"
+            exit 1
+          fi
+          echo "--- SDK 顶层内容 ---"
+          ls -1 "$ANDROID_HOME"
+
+      # 所有安装/许可动作都容忍失败：装不上也不要紧，Gradle 会自行补齐
+      - name: 补装 SDK 组件并接受许可（尽力而为）
+        run: |
+          set +e
+          SDKMGR="$(find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f 2>/dev/null | head -n1)"
+          if [ -z "$SDKMGR" ]; then
+            echo "· 没找到 sdkmanager，跳过（Gradle 会按需自行下载）"
+            exit 0
+          fi
+          echo "使用 sdkmanager: $SDKMGR"
+          yes | "$SDKMGR" --licenses > /dev/null 2>&1
+          echo "· 许可处理完毕（忽略告警）"
+          for pkg in "platform-tools" "platforms;android-34" "build-tools;34.0.0"; do
+            if "$SDKMGR" --install "$pkg" > /dev/null 2>&1; then
+              echo "✔ $pkg"
+            else
+              echo "· $pkg 安装有告警（继续，交给 Gradle 处理）"
+            fi
+          done
+          exit 0
+
+      - name: 构建应用
+        run: node build.js
+
+      - name: 生成 Capacitor Android 工程
+        run: |
+          set -euo pipefail
+          mkdir -p android-app
+          cd android-app
+
+          npm init -y > /dev/null
+          npm install --no-audit --no-fund --loglevel=error \
+            @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6
+
+          # 只放【单文件版】：它没有任何外部引用，也没有 Service Worker。
+          # 这样最省事，也不会出现「离线缓存导致更新 APK 后还是旧界面」的问题。
+          mkdir -p www
+          cp ../ai-novel-studio-mobile.html www/index.html
+
+          # 直接用 JSON 配置，避免 cap init 生成 .ts 配置（那会需要额外依赖）
+          node -e "require('fs').writeFileSync('capacitor.config.json', JSON.stringify({appId: process.env.APP_ID, appName: process.env.APP_NAME, webDir: 'www'}, null, 2) + '\n')"
+          rm -f capacitor.config.ts
+
+          npx --yes cap add android
+          npx --yes cap sync android
+
+          MANIFEST="android/app/src/main/AndroidManifest.xml"
+          if [ -f "$MANIFEST" ] && ! grep -q 'usesCleartextTraffic' "$MANIFEST"; then
+            sed -i 's|<application|<application android:usesCleartextTraffic="true"|' "$MANIFEST"
+            echo "· 已允许明文 http（接本地 Ollama 时有用；用 https 接口则无影响）"
+          fi
+
+          # 换成项目自己的星月图标
+          ICON="$GITHUB_WORKSPACE/icons/icon-512.png"
+          if [ -f "$ICON" ]; then
+            n=0
+            for f in $(find android/app/src/main/res -name 'ic_launcher*.png' 2>/dev/null); do
+              cp "$ICON" "$f"; n=$((n+1))
+            done
+            echo "· 已替换 $n 个图标文件"
+          fi
+
+      - name: Gradle 打包（debug 签名）
+        run: |
+          set -euo pipefail
+          cd android-app/android
+          chmod +x ./gradlew
+          ./gradlew --no-daemon --stacktrace assembleDebug
+
+      - name: 收集 APK
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          SRC=android-app/android/app/build/outputs/apk/debug/app-debug.apk
+          [ -f "$SRC" ] || { echo "::error::没有找到 APK 产物"; find android-app/android/app/build/outputs -type f || true; exit 1; }
+          DEST="out/${APP_NAME}-${GITHUB_REF_NAME}-debug.apk"
+          cp "$SRC" "$DEST"
+          ls -lh out/
+
+      - name: 上传 APK（在本页底部 Artifacts 下载）
+        uses: actions/upload-artifact@v4
+        with:
+          name: DreamWeaver-APK
+          path: out/*.apk
+          retention-days: 30

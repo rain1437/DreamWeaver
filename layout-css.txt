@@ -1,0 +1,380 @@
+
+/* ============================================================================
+   DreamWeaver · 幻梦织者 —— UI 重编排层（纯表现层）
+   ----------------------------------------------------------------------------
+   本段只做「视觉与布局收纳」，不改任何业务 JS、不删任何 DOM、不动任何 id/data-*。
+   ① 变量：在原有 --sky-* / --sea-* / --dream-* 之上「扩展」新变量，旧变量全部保留
+   ② 组件：.accordion / .accordion-head / .accordion-body（原生 checkbox 驱动，
+      不需要任何事件 JS）、.tip-info 信息气泡、.btn-more 更多按钮
+   ③ 手机（≤720px）收纳：说明文字折叠、高级参数折叠、次要按钮收进「更多 ⋯」
+   ④ 性能：玻璃模糊只留给主卡片（≤12px），子卡片实色；低配/减少动态全量降级
+   ⑤ 交互：卡片 hover 微浮、按钮微光、focus 柔光环、空状态符号化
+   ========================================================================== */
+
+/* ---------------- ① 变量扩展（不删旧变量，只做映射与新增） ---------------- */
+:root{
+  /* 梦幻主题扩展 */
+  --lay-star:#7fa9e8;          /* 浅星蓝 */
+  --lay-violet:#a99cea;        /* 淡星紫 */
+  --lay-moon:#f6f9ff;          /* 月白 */
+  --lay-ink:#1b2a44;
+  --lay-line:#dbe5f7;          /* 分层描边（比 --line 更淡，用于分割线） */
+  --lay-line-2:#eaf1fc;
+  --lay-glass:rgba(255,255,255,.74);      /* 主卡片磨砂底 */
+  --lay-solid:#ffffff;                     /* 子卡片实色底 */
+  --lay-sunken:rgba(240,245,254,.72);      /* 内嵌区域 */
+  --lay-tint:rgba(127,169,232,.10);        /* 星蓝淡染 */
+  --lay-tint-2:rgba(169,156,234,.12);      /* 星紫淡染 */
+  /* 阴影：全套克制，最多两层 */
+  --lay-sh-1:0 1px 2px rgba(58,88,150,.06);
+  --lay-sh-2:0 3px 12px rgba(58,88,150,.08);
+  --lay-sh-3:0 8px 24px rgba(58,88,150,.10);
+  --lay-sh-glow:0 6px 20px rgba(127,169,232,.26);
+  --lay-ring:0 0 0 3px rgba(127,169,232,.20);
+  --lay-radius:16px; --lay-radius-sm:11px; --lay-radius-pill:999px;
+  --lay-gap:16px;
+  --lay-ease:cubic-bezier(.2,.8,.3,1);
+  --lay-blur:blur(11px) saturate(1.08);    /* 模糊半径 ≤12px（低端机友好） */
+  /* 统一覆盖主题里的磨砂强度，避免 >12px 的 blur 在手机上掉帧 */
+  --frost:blur(11px) saturate(1.08);
+  /* 状态色（白蓝主题下微调，保证对比度） */
+  --lay-ok:#2f8f6f; --lay-warn:#9a7320; --lay-bad:#c0504f;
+}
+
+/* 分割线 / 分层描边工具类 */
+.sec-div{height:1px;background:linear-gradient(90deg,transparent,var(--lay-line),transparent);margin:14px 0;border:0}
+
+/* ---------------- ② 无障碍与触屏基线 ---------------- */
+html{-webkit-tap-highlight-color:transparent}
+button,label,.btn,.tchip,.tab,.subtab{ -webkit-touch-callout:none }
+/* 触屏所有可点控件 ≥44px（含原生 label 型控件） */
+html[data-touch="1"] .btn,
+html[data-touch="1"] .btn.sm,
+html[data-touch="1"] .btn.xs,
+html[data-touch="1"] .iconbtn,
+html[data-touch="1"] .tab,
+html[data-touch="1"] .subtab,
+html[data-touch="1"] .ltab,
+html[data-touch="1"] .tchip,
+html[data-touch="1"] .seg button,
+html[data-touch="1"] .seg2 button,
+html[data-touch="1"] .accordion-head,
+html[data-touch="1"] .btn-more,
+html[data-touch="1"] .dlg-x{min-height:44px}
+html[data-touch="1"] .tip-info{min-width:24px;min-height:24px}
+/* 手机：输入框 16px 规避 iOS 聚焦缩放 */
+html[data-device="phone"] input,
+html[data-device="phone"] select,
+html[data-device="phone"] textarea{font-size:16px}
+html[data-device="phone"] .composer textarea{font-size:16px;line-height:1.7}
+/* 滚动容器：禁止连锁回弹抖动 */
+.chatlog,.read,.scroll,.snap-list,#chapterList,#loreBody,#charList,#hookList,
+#summaryList,.dlg-body,.list-scroll,.cards-scroll{overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.dlg-body{overscroll-behavior:contain}
+
+/* ---------------- ③ 卡片：主卡片磨砂 / 子卡片实色 ---------------- */
+/* 顶部栏：原为 blur(16px)，按规范收到 12px 以内 */
+.topbar,.stickytop{backdrop-filter:blur(11px);-webkit-backdrop-filter:blur(11px)}
+.card{
+  background:var(--lay-glass);
+  backdrop-filter:var(--lay-blur);-webkit-backdrop-filter:var(--lay-blur);
+  border:1px solid var(--line-soft);border-radius:var(--lay-radius);
+  box-shadow:var(--lay-sh-2);
+  padding:18px;transition:box-shadow .2s var(--lay-ease),transform .2s var(--lay-ease);
+}
+/* 子卡片与列表条目：一律实色底，不开模糊（避免同时多层 backdrop-filter） */
+.chcard2,.book,.item,.relrow,.tieropt,.snaprow,.lrow,.wrow,.hookrow,.sumrow,
+.card .card,.card.sunken,.card.sunken,.subcard,.rel-table{
+  background:var(--lay-solid) !important;
+  backdrop-filter:none !important;-webkit-backdrop-filter:none !important;
+}
+.card .card,.card.sunken,.subcard{background:var(--lay-sunken) !important;box-shadow:none;border:1px solid var(--lay-line)}
+/* 卡片标题：层级装饰条 */
+.card>h3,.subcard>h3{
+  display:flex;align-items:center;gap:8px;font-size:14.5px;letter-spacing:.2px}
+.card>h3::before,.subcard>h3::before{
+  content:'';width:3px;height:15px;border-radius:2px;flex:0 0 3px;
+  background:linear-gradient(180deg,var(--lay-star),var(--lay-violet))}
+/* 卡片内分组分割线 */
+.card>h3+.hint{margin-top:6px;padding-top:0}
+.card h3+h3,.card .sec-div+*{margin-top:2px}
+
+/* ---------------- ④ 按钮分层 ---------------- */
+.btn{background:var(--lay-solid);border:1px solid var(--line);border-radius:var(--lay-radius-sm);
+  box-shadow:var(--lay-sh-1);transition:transform .14s var(--lay-ease),box-shadow .16s,border-color .16s,background .16s}
+.btn.primary{
+  background:linear-gradient(150deg,#8db4ec 0%, #6f92dc 55%, #8577d6 100%);
+  border-color:transparent;color:#fff;
+  box-shadow:var(--lay-sh-glow);}
+.btn.primary:hover{box-shadow:0 10px 26px rgba(127,169,232,.34)}
+.btn.ghost{background:transparent;box-shadow:none;border-color:transparent;color:var(--muted)}
+.btn.ghost:hover{background:var(--lay-tint);color:var(--accent);border-color:transparent}
+.btn.danger{color:var(--lay-bad);border-color:rgba(192,80,79,.35);background:rgba(192,80,79,.06)}
+.btn.danger:hover{background:rgba(192,80,79,.12);border-color:rgba(192,80,79,.5)}
+/* hover 微光（仅指针设备；触屏由 html[data-touch] 关掉位移） */
+@media (hover:hover){
+  .btn:not(.primary):not(.ghost):hover{transform:translateY(-1px);box-shadow:var(--lay-sh-2);border-color:var(--accent-2)}
+  .card:hover{box-shadow:var(--lay-sh-3)}
+  .book:hover{transform:translateY(-4px)}
+  .chcard2:hover{transform:translateY(-2px);box-shadow:var(--lay-sh-2)}
+  .item:hover,.lrow:hover,.hookrow:hover,.sumrow:hover{background:#fbfdff}
+}
+/* 「更多 ⋯」按钮：label 扮成按钮（原生 checkbox 驱动，无需事件 JS） */
+.btn-more{display:none;align-items:center;gap:6px;cursor:pointer;
+  background:var(--lay-solid);border:1px solid var(--line);border-radius:var(--lay-radius-sm);
+  padding:8px 13px;font-size:13.5px;color:var(--fg-soft);box-shadow:var(--lay-sh-1);
+  transition:border-color .16s,box-shadow .16s,background .16s}
+html[data-device="phone"] .btn-more,html[data-device="tablet"] .btn-more{display:inline-flex}
+.btn-more:active{background:var(--lay-tint)}
+.btn-more .caret{width:12px;height:12px;transition:transform .2s var(--lay-ease)}
+/* 折叠开关本身不显示 */
+.acc-toggle{display:none !important}
+
+/* ============================================================================
+   ⑤ 通用折叠面板 accordion
+   —— 结构：容器内先放 <input class="acc-toggle"> + <label class="accordion-head">
+      再是若干 <div class="accordion-body">（与原始 DOM 同级，未移动、未删除）
+      展开状态全部由 :checked 原生控制，零事件 JS
+   ========================================================================== */
+.accordion-head{
+  display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;
+  padding:9px 12px;margin:8px 0 6px;font-size:12.5px;color:var(--fg-soft);
+  background:linear-gradient(120deg,var(--lay-tint),var(--lay-tint-2));
+  border:1px solid var(--lay-line);border-radius:var(--lay-radius-sm);
+  transition:border-color .16s,background .16s}
+.accordion-head:hover{border-color:var(--accent-2)}
+.accordion-head .ah-ic{width:15px;height:15px;flex:0 0 15px;opacity:.85;
+  background:currentColor;
+  -webkit-mask:var(--ah-mask) center/contain no-repeat;mask:var(--ah-mask) center/contain no-repeat}
+.accordion-head .ah-tx{flex:1;min-width:0;font-weight:600}
+.accordion-head .ah-meta{font-size:11px;color:var(--muted);font-weight:400}
+.accordion-head .ah-caret{width:13px;height:13px;flex:0 0 13px;transition:transform .22s var(--lay-ease);
+  background:currentColor;
+  -webkit-mask:var(--ah-caret) center/contain no-repeat;mask:var(--ah-caret) center/contain no-repeat}
+.accordion-body{transition:opacity .18s var(--lay-ease)}
+/* 默认（桌面）：展开；显式收起 */
+.accordion-body[data-laystate="closed"]{display:none}
+/* 手机 / 平板：默认收起，点开才显示 */
+html[data-device="phone"] .accordion-body:not([data-laystate="open"]),
+html[data-device="tablet"] .accordion-body:not([data-laystate="open"]){
+  display:none}
+/* 展开态视觉：箭头旋转 + 面板左侧星蓝引导线 */
+.accordion-body[data-laystate="open"]{opacity:1}
+.accordion-body{border-left:2px solid transparent}
+.accordion-body[data-laystate="open"]{border-left-color:var(--lay-tint-2);padding-left:10px;margin-left:2px}
+/* 原生 checkbox 联动的兜底（若某处用了真结构 .accordion > head + body）；
+   注意：本层用 data-laystate 驱动显隐，这里不写 display 规则，避免互相干扰 */
+.accordion>.accordion-head{margin-top:10px}
+.accordion>.accordion-head+.accordion-body{margin-top:2px}
+
+/* 状态驱动的箭头：checkbox 选中时旋转 */
+.acc-toggle:checked~.accordion-head .ah-caret{transform:rotate(180deg)}
+.accordion-head:has(+.accordion-body[data-laystate="open"]) .ah-caret{transform:rotate(180deg)}
+
+/* ---------------- ⑥ 折叠内容本体样式微调 ---------------- */
+.accordion-body.hint,.accordion-body.warnbox{margin-top:0}
+.accordion-body.hint{font-size:12.5px;line-height:1.85;color:var(--muted);
+  background:var(--lay-sunken);border:1px solid var(--lay-line);border-radius:var(--lay-radius-sm);padding:11px 13px}
+.accordion-body.hint b{color:var(--fg-soft)}
+.accordion-body.warnbox{border-left:3px solid var(--lay-warn)}
+
+/* ============================================================================
+   ⑦ 信息气泡 tip-info（ⓘ，替代大段平铺说明）
+   ========================================================================== */
+.tip-info{display:inline-flex;align-items:center;justify-content:center;cursor:help;
+  width:18px;height:18px;border-radius:50%;flex:0 0 18px;vertical-align:middle;
+  border:1px solid var(--lay-line);background:var(--lay-tint);color:var(--accent);
+  font-size:11px;font-weight:700;line-height:1;position:relative}
+.tip-info:hover,.tip-info:focus-visible{border-color:var(--accent-2);box-shadow:var(--lay-ring);outline:none}
+.tip-info::after{
+  content:attr(data-tip);position:absolute;left:50%;bottom:150%;transform:translateX(-50%) translateY(5px);
+  width:max-content;max-width:min(272px,66vw);padding:9px 12px;border-radius:12px;
+  background:linear-gradient(160deg,#2c4670,#1b2c4d);color:#fff;
+  font-size:12px;font-weight:400;line-height:1.7;text-align:left;white-space:normal;
+  box-shadow:var(--lay-sh-3);opacity:0;pointer-events:none;z-index:72;
+  transition:opacity .18s,padding .18s}
+.tip-info:hover::after,.tip-info:focus-visible::after{opacity:1}
+/* 触屏用点击态（tabindex=0 + :focus 原生触发，无需 JS） */
+.tip-info[data-tap]:active::after{opacity:1}
+html[data-device="phone"] .tip-info{width:22px;height:22px;flex-basis:22px;font-size:12px}
+html[data-device="phone"] .tip-info::after{max-width:74vw;font-size:12.5px}
+
+/* ============================================================================
+   ⑧ 手机端收纳：网格单栏、留白加大
+   —— 尊重用户的「紧凑布局」选择（写了 compact 就不强行加留白）
+   ========================================================================== */
+@media (max-width:720px){
+  .row,.row3{grid-template-columns:1fr}
+}
+html[data-device="phone"] .grid,
+html[data-device="phone"] .grid2,
+html[data-device="phone"] .work,
+html[data-device="phone"] .lgrid{grid-template-columns:1fr !important}
+html[data-device="tablet"] .grid,
+html[data-device="tablet"] .grid2{grid-template-columns:1fr !important}
+/* 书架：手机单列 / 平板双列 / 桌面多列 */
+html[data-device="phone"] .books{grid-template-columns:1fr !important;gap:14px}
+html[data-device="tablet"] .books{grid-template-columns:repeat(2,1fr) !important;gap:15px}
+html[data-device="phone"] .charlist{grid-template-columns:1fr !important}
+/* 留白加大（用户选了紧凑布局则不加） */
+html[data-device="phone"]:not([data-density="compact"]) .work{gap:15px}
+html[data-device="phone"]:not([data-density="compact"]) .card{padding:16px}
+html[data-device="phone"]:not([data-density="compact"]) .card+.card,
+html[data-device="phone"]:not([data-density="compact"]) .grid>*+*{margin-top:2px}
+html[data-device="phone"] .item{padding:13px 13px}
+html[data-device="phone"] .lrow{padding:11px 12px}
+html[data-device="phone"] .toolbar{gap:9px}
+html[data-device="phone"] .chatlog{gap:13px}
+
+/* ============================================================================
+   ⑨ 按钮收纳：只在手机/平板上把「次要按钮」藏进「更多 ⋯」
+   —— 被隐藏的按钮仍在 DOM 中、仍在原父节点、可被 JS 读写与点击（展开后）
+   ========================================================================== */
+html[data-device="phone"] .lay-tb .lay-sec,
+html[data-device="tablet"] .lay-tb .lay-sec{display:none}
+html[data-device="phone"] .lay-tb.tb-open .lay-sec,
+html[data-device="tablet"] .lay-tb.tb-open .lay-sec{display:inline-flex}
+/* checkbox 兜底联动：勾选即展开（无需事件 JS） */
+html[data-device="phone"] .lay-tb>input.acc-toggle:checked~.lay-sec,
+html[data-device="tablet"] .lay-tb>input.acc-toggle:checked~.lay-sec{display:inline-flex}
+/* 桌面永远全部显示 */
+html[data-device="desktop"] .lay-tb .lay-sec{display:inline-flex}
+
+/* ============================================================================
+   ⑩ 标签页横向滚动：渐变遮罩 + 激活微光
+   ========================================================================== */
+.tabs,.subtabs,.ltabs{position:relative;scroll-behavior:smooth}
+html[data-device="phone"] .tabs::after,
+html[data-device="phone"] .subtabs::after,
+html[data-device="phone"] .ltabs::after{
+  content:'';position:sticky;right:0;top:0;bottom:0;width:22px;flex:0 0 22px;pointer-events:none;
+  background:linear-gradient(270deg,var(--lay-moon),rgba(246,249,255,0))}
+html[data-theme="dark"] .tabs::after,
+html[data-theme="dark"] .subtabs::after,
+html[data-theme="dark"] .ltabs::after{background:linear-gradient(270deg,#121b2e,rgba(18,27,46,0))}
+html[data-theme="auto"][data-sysdark="1"] .tabs::after,
+html[data-theme="auto"][data-sysdark="1"] .subtabs::after,
+html[data-theme="auto"][data-sysdark="1"] .ltabs::after{background:linear-gradient(270deg,#121b2e,rgba(18,27,46,0))}
+.tab.active,.subtab.active,.ltab.active{box-shadow:0 4px 16px rgba(127,169,232,.28)}
+/* 章节列表：手机横向滚动 */
+html[data-device="phone"] #chapterList.has-hscroll{margin:0 -16px;padding:0 16px}
+
+/* ============================================================================
+   ⑪ 空状态美化（符号用内联 SVG data-URI，无任何外部资源）
+   ========================================================================== */
+.empty{position:relative;padding:52px 22px;line-height:1.9}
+.empty::before{
+  content:'';display:block;width:46px;height:46px;margin:0 auto 12px;opacity:.42;
+  background:linear-gradient(160deg,var(--lay-star),var(--lay-violet));
+  -webkit-mask:var(--empty-mask,var(--ic-book)) center/contain no-repeat;
+  mask:var(--empty-mask,var(--ic-book)) center/contain no-repeat}
+#charList .empty,.charlist .empty{--empty-mask:var(--ic-user)}
+#loreBody .empty,.lgroup .empty{--empty-mask:var(--ic-globe)}
+#hookList .empty{--empty-mask:var(--ic-hook)}
+#chapterList .empty{--empty-mask:var(--ic-list)}
+#chatLog .empty{--empty-mask:var(--ic-chat)}
+#summaryList .empty,.scroll .empty{--empty-mask:var(--ic-file)}
+#bookGrid .empty{--empty-mask:var(--ic-book)}
+#readPane .empty{--empty-mask:var(--ic-book)}
+.relgraph .empty,#relList .empty{--empty-mask:var(--ic-net)}
+/* 内联 SVG 遮罩图标（限定在文件内部，不引用任何外部资源） */
+:root{
+  --ic-book:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 4h11a3 3 0 0 1 3 3v13H7a3 3 0 0 1-3-3z'/%3E%3Cpath d='M8 8h6M8 12h6'/%3E%3C/svg%3E");
+  --ic-user:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round'%3E%3Ccircle cx='12' cy='8' r='3.6'/%3E%3Cpath d='M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6'/%3E%3C/svg%3E");
+  --ic-globe:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.6'%3E%3Ccircle cx='12' cy='12' r='8.4'/%3E%3Cpath d='M3.6 12h16.8M12 3.6c2.4 2.6 2.4 14.2 0 16.8M12 3.6c-2.4 2.6-2.4 14.2 0 16.8'/%3E%3C/svg%3E");
+  --ic-hook:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round'%3E%3Cpath d='M15 7a4 4 0 1 0-8 0v6a3 3 0 1 0 6 0'/%3E%3Ccircle cx='17.5' cy='7' r='2.5'/%3E%3C/svg%3E");
+  --ic-list:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round'%3E%3Cpath d='M8 6h12M8 12h12M8 18h12'/%3E%3Ccircle cx='4.2' cy='6' r='1.2' fill='%23000'/%3E%3Ccircle cx='4.2' cy='12' r='1.2' fill='%23000'/%3E%3Ccircle cx='4.2' cy='18' r='1.2' fill='%23000'/%3E%3C/svg%3E");
+  --ic-chat:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.6' stroke-linejoin='round'%3E%3Cpath d='M20 15a3 3 0 0 1-3 3H9l-5 3v-3.5A3 3 0 0 1 4 15V7a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3z'/%3E%3C/svg%3E");
+  --ic-file:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round'%3E%3Cpath d='M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z'/%3E%3Cpath d='M14 3v5h5M9 13h6M9 17h4'/%3E%3C/svg%3E");
+  --ic-net:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.6'%3E%3Ccircle cx='12' cy='5.5' r='2.4'/%3E%3Ccircle cx='5.5' cy='17' r='2.4'/%3E%3Ccircle cx='18.5' cy='17' r='2.4'/%3E%3Cpath d='M10.4 7.2 7.2 14.8M13.6 7.2l3.2 7.6M8 17h8'/%3E%3C/svg%3E");
+  --ic-chev:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  --ic-info:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 11v6M12 7.6v.6'/%3E%3C/svg%3E");
+  --ic-sliders:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round'%3E%3Cpath d='M4 7h10M18 7h2M4 17h4M12 17h8'/%3E%3Ccircle cx='16' cy='7' r='2'/%3E%3Ccircle cx='10' cy='17' r='2'/%3E%3C/svg%3E");
+}
+.accordion-head{--ah-caret:var(--ic-chev);--ah-mask:var(--ic-info)}
+.accordion-head[data-kind="adv"]{--ah-mask:var(--ic-sliders)}
+
+/* ---------------- ⑫ AI 状态浮窗 / toast：空闲·运行·错误三态微光 ---------------- */
+#aiStatus{box-shadow:var(--lay-sh-3)}
+#aiStatus[data-state="busy"]{border-color:rgba(127,169,232,.4)}
+#aiStatus[data-state="ok"]{border-color:rgba(47,143,111,.42)}
+#aiStatus[data-state="ok"] .as-dot{background:var(--lay-ok);animation:none;opacity:1}
+#aiStatus[data-state="err"]{border-color:rgba(192,80,79,.45);background:rgba(255,246,246,.94)}
+#aiStatus[data-state="err"] .as-dot{background:var(--lay-bad);animation:none;opacity:1}
+#aiStatus[data-state="err"] .as-orbs i{border-top-color:var(--lay-bad);animation-play-state:paused}
+html[data-theme="dark"] #aiStatus[data-state="err"],
+html[data-theme="auto"][data-sysdark="1"] #aiStatus[data-state="err"]{background:rgba(58,30,34,.9)}
+.toast{box-shadow:var(--lay-sh-3);border-radius:var(--lay-radius-pill)}
+.toast.err{background:linear-gradient(150deg,#a4463f,#7d3330)}
+
+/* ---------------- ⑬ 输入框与表单：focus 柔光环 ---------------- */
+input[type=number],input[type=search],input[type=text],select,textarea{
+  border-radius:var(--lay-radius-sm);transition:border-color .16s,box-shadow .18s,background .16s}
+input:focus,select:focus,textarea:focus{border-color:var(--lay-star);box-shadow:var(--lay-ring)}
+label{color:var(--fg-soft)}
+.meta,.tip{color:var(--muted)}
+
+/* ---------------- ⑭ 暗色模式打磨 ---------------- */
+html[data-theme="dark"],html[data-theme="auto"][data-sysdark="1"]{
+  --lay-moon:#0e1526; --lay-glass:rgba(24,34,56,.66); --lay-solid:#18223a;
+  --lay-sunken:rgba(20,29,48,.8); --lay-line:#27334f; --lay-line-2:#202b45;
+  --lay-tint:rgba(127,169,232,.13); --lay-tint-2:rgba(169,156,234,.14);
+  --lay-sh-1:0 1px 2px rgba(0,0,0,.28); --lay-sh-2:0 3px 12px rgba(0,0,0,.3);
+  --lay-sh-3:0 8px 24px rgba(0,0,0,.38); --lay-sh-glow:0 6px 20px rgba(127,169,232,.2);
+  --lay-ring:0 0 0 3px rgba(127,169,232,.24);
+}
+html[data-theme="dark"] .btn,html[data-theme="auto"][data-sysdark="1"] .btn{background:#1e2942}
+html[data-theme="dark"] .card .card,html[data-theme="dark"] .card.sunken,
+html[data-theme="auto"][data-sysdark="1"] .card .card,html[data-theme="auto"][data-sysdark="1"] .card.sunken{background:rgba(20,29,48,.8) !important}
+html[data-theme="dark"] .accordion-head,
+html[data-theme="auto"][data-sysdark="1"] .accordion-head{color:var(--fg-soft);border-color:var(--lay-line)}
+html[data-theme="dark"] .accordion-body.hint,
+html[data-theme="auto"][data-sysdark="1"] .accordion-body.hint{background:rgba(20,29,48,.86);border-color:var(--lay-line)}
+html[data-theme="dark"] .item:hover,html[data-theme="dark"] .lrow:hover,
+html[data-theme="auto"][data-sysdark="1"] .item:hover,html[data-theme="auto"][data-sysdark="1"] .lrow:hover{background:#1d2842}
+html[data-theme="dark"] .btn-more,html[data-theme="auto"][data-sysdark="1"] .btn-more{background:#1e2942;color:var(--fg-soft)}
+html[data-theme="dark"] .tip-info,html[data-theme="auto"][data-sysdark="1"] .tip-info{background:rgba(127,169,232,.16)}
+html[data-theme="dark"] .empty::before,html[data-theme="auto"][data-sysdark="1"] .empty::before{opacity:.5}
+
+/* 卡片内多分节：标题之间给分割线，层次更清楚 */
+.card>h3:not(:first-child),.subcard>h3:not(:first-child){
+  margin-top:20px;padding-top:16px;border-top:1px solid var(--lay-line)}
+
+/* ---------------- ⑮ 性能：低配 / 关动画 全量降级 ---------------- */
+html[data-lowend="1"] .card,html[data-lowend="1"] dialog,html[data-lowend="1"] .topbar,
+html[data-lowend="1"] .stickytop,html[data-lowend="1"] #aiStatus,html[data-lowend="1"] .btn-more{
+  backdrop-filter:none !important;-webkit-backdrop-filter:none !important}
+html[data-lowend="1"] .card{background:var(--card-solid)}
+html[data-lowend="1"] .book:hover,html[data-lowend="1"] .chcard2:hover,html[data-lowend="1"] .card:hover{transform:none}
+html[data-lowend="1"] .tabs::after,html[data-lowend="1"] .subtabs::after,html[data-lowend="1"] .ltabs::after{display:none}
+/* 手机：隐藏一半飘雾，降低合成开销 */
+html[data-device="phone"] .art .w3{display:none}
+html[data-device="phone"] .art .w1{opacity:.4}
+html[data-device="phone"] .art .w2{opacity:.32}
+html[data-device="phone"] .art::after{opacity:.34}
+html[data-device="phone"] .art .wave{filter:blur(9px)}
+html[data-lowend="1"] .art .wave{filter:blur(6px)}
+
+/* ---------------- ⑯ 手机弹窗：全屏 + 安全区适配 ---------------- */
+@media (max-width:720px){
+  dialog[open]{
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+    height:calc(var(--vh,1vh) * 100);
+    max-height:calc(var(--vh,1vh) * 100)}
+  dialog[open] .dlg-foot{padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))}
+  dialog[open] .dlg-x{top:calc(8px + env(safe-area-inset-top,0px))}
+}
+
+/* ---------------- ⑰ 启用 / 停用 状态区分得更清楚 ---------------- */
+.lrow.off,.wrow.off,.chcard2.off,.item.off{border-left:3px solid var(--lay-line);opacity:.62}
+.lrow:not(.off),.wrow:not(.off){border-left:3px solid transparent}
+
+/* ---------------- ⑱ 正文消息工具条：主操作突出、其余弱化 ---------------- */
+.acts .btn.xs:not(.primary):not(.ghost){border-color:var(--lay-line)}
+.acts .btn.xs.ghost{color:var(--muted)}
+@media (prefers-reduced-motion:reduce){
+  .accordion-head .ah-caret,.accordion-body,.btn,.card,.book,.chcard2{transition:none !important}
+  .book:hover,.chcard2:hover,.card:hover,.btn:hover{transform:none !important}
+  #aiStatus[data-state] .as-orbs i{animation:none !important}
+}

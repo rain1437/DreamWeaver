@@ -1,0 +1,202 @@
+
+/* ============================================================================
+   ⑥ 设备自适应增强：自动识别「电脑 / 平板 / 手机」+ 手机竖屏专项
+   —— 由 <head> 里的脚本在 <html> 上打标：
+      data-device  = phone | tablet | desktop
+      data-orient  = portrait | landscape
+      data-touch   = 1 | 0
+      data-viewpref= auto | phone | desktop（用户强制）
+   —— 下面同时保留纯 CSS 媒体查询兜底，脚本没跑也能用
+   ========================================================================== */
+
+/* ---- 1) 防溢出：窄屏「撑破版心」的第一元凶 ---- */
+.card,.panel,.item,.charcard,.book,.editor-head>*,
+.work>*,.grid>*,.grid2>*,.toc-wrap>*,.row>*,.row3>*,
+.chapter-list>*,.toc-list>*,.chatlog>*{min-width:0}
+.prose,.msg,.msg .body,.msg .para,.read,.hint,
+.idea,.idea .isum,pre.prompt,.tocrow .tt,.item-body,.step .tx,
+.fixbox,.warnbox,.okbox,.kvrow .v{overflow-wrap:anywhere;word-break:break-word}
+img,svg,video,canvas,table{max-width:100%}
+input,select,textarea{max-width:100%}
+html[data-device]{overflow-x:hidden}
+/* 触屏：取消双击缩放与点击灰块，手感更接近原生 App */
+html[data-touch="1"] button,html[data-touch="1"] .tab,html[data-touch="1"] .subtab,
+html[data-touch="1"] .tocrow,html[data-touch="1"] .book,html[data-touch="1"] .ch{
+  -webkit-tap-highlight-color:transparent;touch-action:manipulation}
+html[data-touch="1"] .book .bacts{opacity:1}
+/* 内部滚动容器：滚到边界不带着整页乱晃 */
+.scroll,.chatlog,.toc-list,.chapter-list,.read,.snap-list{
+  overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+
+/* ---- 2) 手机（竖屏优先） ---- */
+html[data-device="phone"] body{font-size:15px}
+/* 关键：表单控件字号 ≥16px，否则 iOS 一聚焦就放大整页 */
+html[data-device="phone"] input[type=text],
+html[data-device="phone"] input[type=password],
+html[data-device="phone"] input[type=number],
+html[data-device="phone"] input[type=search],
+html[data-device="phone"] select,
+html[data-device="phone"] textarea{font-size:16px;padding:11px 12px;border-radius:12px}
+html[data-device="phone"] textarea{min-height:96px}
+html[data-device="phone"] label{margin:15px 0 6px;font-size:13px}
+/* 拇指友好的点击区 */
+html[data-device="phone"] .btn{padding:10px 15px;font-size:14.5px;min-height:42px}
+html[data-device="phone"] .btn.sm{padding:9px 13px;font-size:13.5px;min-height:38px}
+html[data-device="phone"] .btn.xs{padding:7px 11px;font-size:12.5px;min-height:34px}
+html[data-device="phone"] .iconbtn{width:42px;height:42px;border-radius:13px;font-size:17px}
+html[data-device="phone"] .tab{padding:10px 17px;font-size:14.5px}
+html[data-device="phone"] .subtab{padding:10px 17px;font-size:14px}
+html[data-device="phone"] .ch .chacts i{padding:9px 11px;font-size:14px}
+html[data-device="phone"] .tocrow{padding:12px 12px}
+html[data-device="phone"] .switch input{width:20px;height:20px}
+html[data-device="phone"] .toolbar{gap:8px}
+html[data-device="phone"] .seg button,html[data-device="phone"] .seg2 button{padding:8px 15px}
+html[data-device="phone"] .card{padding:15px}
+html[data-device="phone"] .empty{padding:34px 16px}
+/* 刘海 / 手势条安全区 + 动态视口高度（地址栏伸缩不再抖） */
+html[data-device="phone"] .app,
+html[data-device="phone"] .shelf{padding-left:13px;padding-right:13px;
+  padding-bottom:calc(88px + env(safe-area-inset-bottom,0px))}
+html[data-device="phone"] .stickytop{padding-top:calc(8px + env(safe-area-inset-top,0px))}
+html[data-device="phone"] .toast{bottom:calc(22px + env(safe-area-inset-bottom,0px))}
+/* 注意：这里必须写 dialog[open]，绝不能写成 dialog ——
+   否则「未打开」的弹窗也会被 display:flex 强制显示出来，
+   全屏盖住页面，变成竖屏下点哪都没反应。 */
+html[data-device="phone"][data-orient="portrait"] dialog[open]{
+  display:flex;flex-direction:column;width:100vw;max-width:100vw;
+  height:calc(var(--vh,1vh)*100);max-height:calc(var(--vh,1vh)*100);
+  top:0;left:0;transform:none;border-radius:0}
+html[data-device="phone"][data-orient="portrait"] .dlg-body{flex:1;height:auto;max-height:none;overflow:auto}
+/* 手机横屏：小卡片居中，高度按真实可视视口算 */
+html[data-device="phone"][data-orient="landscape"] dialog[open]{width:min(640px,94vw);max-height:calc(var(--vh,1vh)*92)}
+html[data-device="phone"][data-orient="landscape"] .dlg-body{max-height:calc(var(--vh,1vh)*70)}
+html[data-device="phone"] .dlg-foot{padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))}
+html[data-device="phone"] .dlg-foot .btn{min-height:42px;flex:1;min-width:104px}
+html[data-device="phone"] .dlg-x{width:40px;height:40px;font-size:16px;top:10px;right:10px}
+html[data-device="phone"] .composer textarea{min-height:74px}
+html[data-device="phone"] .chatlog{height:calc(var(--vh,1vh)*56);max-height:calc(var(--vh,1vh)*60)}
+html[data-device="phone"] .chapter-list{max-height:none}
+html[data-device="phone"] .toc-list{max-height:none}
+html[data-device="phone"] .read{max-height:none;padding:22px 16px;font-size:15.5px;line-height:1.98}
+html[data-device="phone"] pre.prompt{max-height:46vh}
+html[data-device="phone"] .art .w1{display:none}
+html[data-device="phone"] .art .sun{width:230px;height:230px;left:-40px;top:-90px}
+html[data-device="phone"] .books{grid-template-columns:repeat(auto-fill,minmax(142px,1fr));gap:13px}
+html[data-device="phone"] .book .cover .ph{font-size:34px}
+html[data-device="phone"] .charcard{grid-column:1/-1}
+/* 手机竖屏：一律单列，永不横向溢出 */
+html[data-device="phone"][data-orient="portrait"] .grid,
+html[data-device="phone"][data-orient="portrait"] .grid2,
+html[data-device="phone"][data-orient="portrait"] .row,
+html[data-device="phone"][data-orient="portrait"] .row3,
+html[data-device="phone"][data-orient="portrait"] .work,
+html[data-device="phone"][data-orient="portrait"] .toc-wrap,
+html[data-device="phone"][data-orient="portrait"] .charlist{grid-template-columns:1fr}
+html[data-device="phone"][data-orient="portrait"] .app,
+html[data-device="phone"][data-orient="portrait"] .shelf{max-width:100%}
+html[data-device="phone"][data-orient="portrait"] .topbar h1{max-width:44vw;font-size:16.5px}
+html[data-device="phone"][data-orient="portrait"] .msg,
+html[data-device="phone"][data-orient="portrait"] .msg.prose{max-width:100%}
+html[data-device="phone"][data-orient="portrait"] .top-actions{flex-direction:column;align-items:stretch;gap:8px}
+html[data-device="phone"][data-orient="portrait"] .top-actions .btn,
+html[data-device="phone"][data-orient="portrait"] .top-actions input,
+html[data-device="phone"][data-orient="portrait"] .top-actions select{width:100%;justify-content:flex-start}
+html[data-device="phone"][data-orient="portrait"] .shelf-top input[type=search],
+html[data-device="phone"][data-orient="portrait"] .shelf-top select{width:100%}
+html[data-device="phone"][data-orient="portrait"] .composer-foot{gap:8px}
+html[data-device="phone"][data-orient="portrait"] .composer-foot #btnSend{flex:1}
+/* 手机横屏：避开刘海侧安全区，并给内容区留高度 */
+html[data-device="phone"][data-orient="landscape"] .app,
+html[data-device="phone"][data-orient="landscape"] .shelf{
+  padding-left:calc(16px + env(safe-area-inset-left,0px));
+  padding-right:calc(16px + env(safe-area-inset-right,0px))}
+html[data-device="phone"][data-orient="landscape"] .stickytop{padding-top:6px;margin-bottom:12px}
+html[data-device="phone"][data-orient="landscape"] .chatlog{height:calc(var(--vh,1vh)*72)}
+html[data-device="phone"][data-orient="landscape"] .chapter-list{max-height:calc(var(--vh,1vh)*62)}
+
+
+/* ---- 3) 纯 CSS 兜底（脚本被拦或未执行时同样可用） ---- */
+@media (max-width:560px){
+  .card,.panel,.work>*,.grid>*,.grid2>*,.toc-wrap>*{min-width:0}
+  input[type=text],input[type=password],input[type=number],input[type=search],select,textarea{font-size:16px}
+  .app,.shelf{padding-left:13px;padding-right:13px;padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+  .grid,.grid2,.row,.row3,.work,.toc-wrap,.charlist{grid-template-columns:1fr}
+}
+@media (max-width:560px) and (orientation:portrait){
+  .msg,.msg.prose{max-width:100%}
+  .chatlog{height:min(58vh,460px)}
+  .read{max-height:none;padding:20px 15px}
+  .top-actions{flex-direction:column;align-items:stretch}
+  .top-actions .btn{width:100%;justify-content:flex-start}
+}
+
+/* ---- 4) 数据保险条 ---- */
+.safebar{position:fixed;left:50%;transform:translateX(-50%);z-index:70;
+  bottom:calc(18px + env(safe-area-inset-bottom,0px));
+  width:min(760px,calc(100vw - 26px));
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  background:linear-gradient(135deg,#fffdf5,#fff6e6);border:1px solid rgba(240,155,52,.45);
+  color:#7a4703;border-radius:16px;padding:10px 12px;box-shadow:var(--shadow-lg);font-size:12.5px}
+.safebar[hidden]{display:none}
+.safebar .sb-ic{font-size:16px;line-height:1}
+.safebar .sb-tx{flex:1;min-width:170px;line-height:1.6}
+.safebar .sb-acts{display:flex;gap:6px;flex-wrap:wrap}
+.safebar.bad{background:linear-gradient(135deg,#fff3f2,#ffe8e6);border-color:rgba(194,60,60,.45);color:#8f2020}
+@media (max-width:720px){
+  .safebar{left:0;right:0;bottom:0;transform:none;width:100vw;border-radius:14px 14px 0 0;
+    padding:11px 13px calc(11px + env(safe-area-inset-bottom,0px))}
+  .safebar .sb-acts{width:100%}
+  .safebar .sb-acts .btn{flex:1}
+}
+
+/* ---- 5) 数据保险弹窗内的控件 ---- */
+.safe-sec{margin-top:16px;border-top:1px dashed var(--line);padding-top:12px}
+.safe-sec h4{margin:0 0 8px;font-size:13.5px;color:var(--sea-1);font-weight:700}
+.kvrow{display:flex;gap:8px;align-items:baseline;font-size:12.5px;padding:5px 0;flex-wrap:wrap}
+.kvrow .k{min-width:124px;color:var(--muted)}
+.kvrow .v{font-weight:600;color:var(--fg-soft)}
+.kvrow .v.ok{color:var(--ok)} .kvrow .v.bad{color:var(--bad)} .kvrow .v.warn{color:var(--warn)}
+.seg2{display:inline-flex;background:var(--sunken);border:1px solid var(--line-soft);border-radius:999px;padding:3px;gap:3px}
+.seg2 button{background:none;border:0;padding:7px 14px;border-radius:999px;font-size:13px;color:var(--muted);transition:.15s}
+.seg2 button.on{background:#fff;color:var(--sea-1);font-weight:600;box-shadow:var(--shadow-xs)}
+.snap-list{max-height:250px;overflow:auto;margin-top:6px}
+.snaprow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:9px 11px;border:1px solid var(--line-soft);
+  border-radius:var(--radius-sm);background:#fff;margin-bottom:7px;font-size:12.5px}
+.snaprow .sn-t{font-weight:600;color:var(--sea-0)}
+.snaprow .sn-m{color:var(--muted);font-size:11.5px;margin-top:2px}
+.snaprow .sn-a{margin-left:auto;display:flex;gap:5px;flex-wrap:wrap}
+html[data-device="phone"] .snaprow .sn-a{margin-left:0;width:100%}
+html[data-device="phone"] .snaprow .sn-a .btn{flex:1}
+
+/* ---- 6) 强制「电脑版视图」（手机上也想要桌面密度时）---- */
+html[data-viewpref="desktop"]{overflow-x:auto}
+html[data-viewpref="desktop"][data-touch="1"] body{min-width:1080px;overflow-x:auto}
+html[data-viewpref="desktop"] .grid{grid-template-columns:1.25fr 1fr}
+html[data-viewpref="desktop"] .grid2{grid-template-columns:1fr 1fr}
+html[data-viewpref="desktop"] .row{grid-template-columns:1fr 1fr}
+html[data-viewpref="desktop"] .row3{grid-template-columns:1fr 1fr 1fr}
+html[data-viewpref="desktop"] .work{grid-template-columns:230px minmax(0,1fr)}
+html[data-viewpref="desktop"] .toc-wrap{grid-template-columns:268px minmax(0,1fr)}
+html[data-viewpref="desktop"] .charlist{grid-template-columns:repeat(auto-fill,minmax(330px,1fr))}
+html[data-viewpref="desktop"] .books{grid-template-columns:repeat(auto-fill,minmax(196px,1fr))}
+html[data-viewpref="desktop"] .chapter-list{flex-direction:column;max-height:min(660px,66vh);overflow:auto}
+html[data-viewpref="desktop"] .ch{min-width:0}
+html[data-viewpref="desktop"] .top-actions{display:flex !important;width:auto;flex-direction:row;align-items:center}
+html[data-viewpref="desktop"] .top-actions .btn{width:auto;min-height:0}
+html[data-viewpref="desktop"] #btnMenu,html[data-viewpref="desktop"] #btnMenuShelf{display:none}
+html[data-viewpref="desktop"] .topbar .sub{display:block}
+html[data-viewpref="desktop"] .msg{max-width:88%}
+html[data-viewpref="desktop"] .chatlog{height:min(560px,64vh)}
+html[data-viewpref="desktop"] .read{max-height:min(72vh,780px);padding:34px 40px;font-size:16px}
+html[data-viewpref="desktop"] .app,html[data-viewpref="desktop"] .shelf{max-width:1400px}
+html[data-viewpref="desktop"] dialog[open]{height:auto;max-height:88vh;width:min(640px,94vw);
+  left:50%;top:50%;transform:translate(-50%,-50%);border-radius:18px}
+html[data-viewpref="desktop"] .dlg-body{max-height:72vh;padding:22px}
+
+/* ---- 7) 兜底：未打开的弹窗必须彻底隐藏 ----------------
+   浏览器默认样式（dialog 不带 open 属性时隐藏）只是 UA 样式，
+   一旦作者样式里给 dialog 写了 display:flex，就会被覆盖，
+   在窄屏（竖屏手机）上表现为「卡在某个弹窗界面、点其他功能全部无效」。
+   这里用 !important 把这条底线钉死。 */
+dialog:not([open]){display:none !important}
+[hidden]{display:none !important}

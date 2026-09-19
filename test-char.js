@@ -141,8 +141,8 @@ setTimeout(async()=>{ try{
 
   head('B 角色卡细分结构');
   ok(Array.isArray(CH_DEF)&&CH_DEF.length===9,'细分模块 9 个（实际 '+((CH_DEF||[]).length)+'）');
-  ok(CH_DEF.map(m=>m.name).join('').indexOf('性格心理')>=0,'含「性格心理」');
-  ['基础档案','外貌形象','性格心理','说话风格','身世经历','能力特长','人物关系','目标动机','专属约束']
+  ok(CH_DEF.map(m=>m.name).join('').indexOf('性格内核')>=0,'含「性格内核」');
+  ['角色档案','形貌特征','性格内核','口吻腔调','身世履历','能力谱系','关系星图','目标驱动','角色铁律']
     .forEach(n=>ok(CH_DEF.some(m=>m.name===n),'含模块「'+n+'」'));
   ok(S.chTotal()===34,'可填字段共 34 格（实际 '+S.chTotal()+'）');
 
@@ -172,15 +172,15 @@ setTimeout(async()=>{ try{
   {
     const c=S.normChar(JSON.parse(cardBlob));
     ok(c.name==='沈青梧','角色名正确');
-    ok(c.f.look.face.indexOf('浅疤')>=0,'description 的【外貌】已拆到 外貌形象');
-    ok(c.f.person.core.indexOf('外冷内热')>=0,'personality 落到 性格心理');
+    ok(c.f.look.face.indexOf('浅疤')>=0,'description 的【外貌】已拆到 形貌特征');
+    ok(c.f.person.core.indexOf('外冷内热')>=0,'personality 落到 性格内核');
     ok(c.f.person.core.indexOf('{{user}}')<0,'性格里的 {{user}} 已清理');
     ok(c.f.bg.now.indexOf('长安城')>=0,'scenario 落到 当前处境');
     ok(c.f.bg.now.indexOf('{{char}}')<0&&c.f.bg.now.indexOf('{{user}}')<0,'处境里的占位符已清理');
-    ok(c.f.power.skill.indexOf('剑修')>=0,'能力落到 能力特长');
+    ok(c.f.power.skill.indexOf('剑修')>=0,'能力落到 能力谱系');
     ok((c.f.speech.sample||'').indexOf('<START>')<0,'台词示例里的 <START> 标记已清除');
     ok(c.f.rule.other.indexOf('不得让她主动示弱')>=0||c.f.rule.ooc.indexOf('不得让她主动示弱')>=0,
-      'system_prompt 落到 专属约束');
+      'system_prompt 落到 角色铁律');
     ok(c._dropped.length===2,'报告丢弃了 2 项对话专用内容（'+c._dropped.join(' / ')+'）');
     ok(c.tags.join(',')==='女主,剑修,天枢阁','标签保留');
     ok(c.enabled===true&&c.from===1&&c.to===9999,'出场区间默认值正确');
@@ -210,7 +210,7 @@ setTimeout(async()=>{ try{
     ok(host._cls&&host._cls.has('detail'),'列表切到档案视图（.detail）');
     ok(h.indexOf('返回角色列表')>=0,'有返回按钮');
     ok(CH_DEF.every(m=>h.indexOf(m.name)>=0),'9 个细分页签全部渲染');
-    ok(h.indexOf('姓名')>=0&&h.indexOf('称号')>=0,'基础档案字段在');
+    ok(h.indexOf('姓名')>=0&&h.indexOf('称号')>=0,'角色档案字段在');
     ok(h.indexOf('data-act="cai"')>=0,'字段带 AI 扩写/润色/重写按钮');
     ok(h.indexOf('data-cf="basic.alias"')>=0,'字段绑定到 basic.alias');
     ok(h.indexOf('data-cf="@name"')>=0,'姓名绑定到顶层 name');
@@ -240,7 +240,7 @@ setTimeout(async()=>{ try{
     const raw=String(localStorage.getItem('dw-book-'+S.__T.currentId)||'');
     LOG.push('     落盘长度 '+(raw?raw.length:0)+' 字节');
     ok(raw.indexOf('密档')>=0,'字段已落盘到 localStorage');
-    ok(raw.indexOf('旧识')>=0,'人物关系字段也落盘');
+    ok(raw.indexOf('旧识')>=0,'关系星图字段也落盘');
   }
 
   head('J 注入：只发非空字段、无占位符、无对话');
@@ -248,8 +248,8 @@ setTimeout(async()=>{ try{
     const txt=S.chBlockText(0);
     ok(txt.indexOf('本章登场角色')>=0,'有角色区块标题');
     ok(txt.indexOf('沈青梧')>=0,'含角色名');
-    ok(txt.indexOf('【性格心理】')>=0,'按细分模块分组');
-    ok(txt.indexOf('【外貌形象】')>=0,'外貌已注入');
+    ok(txt.indexOf('【性格内核】')>=0,'按细分模块分组');
+    ok(txt.indexOf('【形貌特征】')>=0,'外貌已注入');
     ok(txt.indexOf('{{user}}')<0&&txt.indexOf('{{char}}')<0,'注入文本无占位符');
     ok(txt.indexOf('first_mes')<0&&txt.indexOf('开场')<0,'不注入开场问候语');
     ok(txt.indexOf('顾长庚')>=0||txt.indexOf('主角')>=0,'占位符已替换成具体称呼');
@@ -265,7 +265,7 @@ setTimeout(async()=>{ try{
     /* 走真实的导出构造 */
     const out=S.chExportObj(0);
     ok(out.spec==='chara_card_v2','导出为 SillyTavern V2');
-    ok(out.data.description.indexOf('【外貌形象】')>=0||out.data.description.indexOf('【性格心理】')>=0,
+    ok(out.data.description.indexOf('【形貌特征】')>=0||out.data.description.indexOf('【性格内核】')>=0,
       'description 里按模块拼装');
     ok(!!(out.data.extensions&&out.data.extensions.moYan),'细分结构写入 extensions.moYan');
     ok(out.data.first_mes.indexOf('{{user}}')<0,'导出的 first_mes 也已清理');
@@ -321,7 +321,7 @@ setTimeout(async()=>{ try{
     ok(S.chFilled(S.__T.state.chars[0])===1,'空卡只填了姓名 1 格');
     ok(S.chBlockText(0).indexOf('新角色')>=0,'空卡也能安全注入（不抛异常）');
     const t=S.chBlockText(0);
-    ok(t.indexOf('【基础档案】')<0||t.length>0,'空字段不产生空模块标题');
+    ok(t.indexOf('【角色档案】')<0||t.length>0,'空字段不产生空模块标题');
     S.renderChars();
     ok((doc.querySelector('#charList').innerHTML||'').indexOf('新角色')>=0,'空卡在列表可见');
   }

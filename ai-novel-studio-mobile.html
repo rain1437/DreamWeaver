@@ -1773,6 +1773,109 @@ html[data-lowend="1"] .stickytop{background:rgba(9,14,30,.84)}
 html[data-lowend="1"][data-theme="light"] .stickytop,
 html[data-lowend="1"][data-theme="auto"][data-sysdark="0"] .stickytop{background:rgba(240,246,255,.86)}
 
+
+/* ==UI-POLISH-CSS== 对比度修复 + 手机端分模块抽屉（由 ui-polish.js 注入） */
+
+/* ==========================================================================
+   DreamWeaver · 幻梦织者 —— 收尾润色层（对比度修复 + 手机端分模块抽屉）
+   --------------------------------------------------------------------------
+   由 build.js 在 ui-overhaul.js 之后、写盘之前注入到样式表末尾。
+   只改「表现层」，不触碰任何 id / data-* / 表单字段 / 业务逻辑。
+
+   【一】P0 可读性修复
+     根因：暗色主题把 --accent(#5b9dff) / --star-2(#8fc0ff) 这类亮蓝
+           既当文字色（合适），又当承载白字的背景（不合适）。
+           实测这些位置白字对比度只有 2.1–2.8:1，远低于 WCAG AA 的 4.5:1。
+     做法：新增独立「填充色族」--fill-1/2/3（白字 4.6–6.0:1），
+           只替换「浅色底 + 白字」的 7 处；文字色与发光仍用原 --accent，
+           因此观感方向不变，只是更扎实。
+
+   【二】手机端分模块抽屉
+     覆盖三处子页签：世界树（世界百科/力量体系/纪年史册/铁律约束）、
+     执笔成章（与AI共创/正文精修/目录阅览/记忆卷宗/伏笔罗盘）、
+     角色卡详情（角色档案/形貌特征/性格内核/口吻腔调/身世履历…）
+     · 默认收起，只留一条抽屉头；点右侧角标展开；选中任一项后自动收起
+     · 桌面端 .dw-dh 强制隐藏，页签恢复原生横向形态
+     · 安全兜底：抽屉样式只对 JS 成功加上 .dw-drawer 的元素生效，
+       若 JS 未执行或抛错，页签保持原样，内容不会被藏没
+   ========================================================================== */
+
+/* ---------- 【一】填充色族 + 对比度修复 ---------- */
+:root{ --fill-1:#3d6fe0; --fill-2:#2f6fe0; --fill-3:#5f4fd0; }
+html[data-theme="dark"], html[data-theme="auto"][data-sysdark="1"]{
+  --fill-1:#3d6fe0; --fill-2:#2f6fe0; --fill-3:#5f4fd0; }
+
+/* ①「浅蓝底 + 白字」的 7 处统一换成达标填充 */
+.tab.active,
+.subtab.active,.ltab.active,
+.tchip.on,
+.msg.user{ background:linear-gradient(150deg,var(--fill-1),var(--fill-2)) }
+.lrow-top .idx{ background:linear-gradient(145deg,var(--fill-1),var(--fill-2)) }
+.btn.primary{ background:linear-gradient(150deg,var(--fill-1) 0%,var(--fill-2) 52%,var(--fill-3) 100%) }
+
+/* ② 选中态里的「半透明白胶囊」（白字压白底）→ 改深色胶囊 */
+.tab.active .ti,.tab.active .n{ background:rgba(0,0,0,.32) }
+
+/* ③ 手机底部 Tab 数字角标：9.5px / 2.72:1 → 11px / 达标 */
+html[data-device="phone"] .tab .n{
+  font-size:11px; line-height:16px; min-width:16px; padding:0 5px; font-weight:700;
+  background:var(--accent); color:#fff }
+html[data-theme="dark"][data-device="phone"] .tab .n,
+html[data-theme="auto"][data-sysdark="1"][data-device="phone"] .tab .n{ color:#08111f }
+
+/* ④ AI 小按钮 .aifill：实测 44x25px → 触屏补足 44px 命中区（视觉几乎不变） */
+html[data-touch="1"] .aifill,html[data-device="phone"] .aifill{
+  position:relative; display:inline-flex; align-items:center;
+  padding:7px 11px; font-size:12px; min-height:34px; border-radius:var(--radius-xs) }
+html[data-touch="1"] .aifill::after,html[data-device="phone"] .aifill::after{
+  content:''; position:absolute; left:0; right:0; top:-6px; bottom:-6px }
+
+/* ---------- 【二】手机端分模块抽屉 ---------- */
+html:not([data-device="phone"]) .dw-dh{ display:none !important }
+
+html[data-device="phone"] .dw-dh{
+  display:flex; align-items:center; gap:9px; width:100%; text-align:left;
+  background:var(--glass-2); border:1px solid var(--line); border-radius:var(--radius-sm);
+  padding:11px 12px; margin-bottom:10px; font-size:14px; font-weight:600; color:var(--fg);
+  box-shadow:var(--shadow-xs);
+  backdrop-filter:var(--frost-thin); -webkit-backdrop-filter:var(--frost-thin);
+  transition:border-color .18s var(--ease),background .18s var(--ease),transform .18s var(--spring) }
+html[data-device="phone"] .dw-dh:active{ transform:scale(.985) }
+html[data-device="phone"] .dw-dh .dw-dh-tx{
+  flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+html[data-device="phone"] .dw-dh .dw-dh-n{
+  flex:0 0 auto; font-size:11px; font-weight:700; line-height:16px; padding:0 6px;
+  border-radius:var(--radius-pill); background:var(--sunken); color:var(--muted) }
+html[data-device="phone"] .dw-dh .dw-dh-n:empty{ display:none }
+html[data-device="phone"] .dw-dh .dw-dh-ca{
+  flex:0 0 auto; width:24px; height:24px; display:grid; place-items:center;
+  border-radius:50%; background:var(--sunken); color:var(--muted);
+  font-size:10px; line-height:1;
+  transition:transform .24s var(--ease),background .18s var(--ease),color .18s var(--ease) }
+html[data-device="phone"] .dw-dh.on{ border-color:var(--fill-2) }
+html[data-device="phone"] .dw-dh.on .dw-dh-ca{
+  transform:rotate(180deg); background:var(--fill-2); color:#fff }
+
+html[data-device="phone"] .dw-drawer{
+  display:none; flex-direction:column; gap:6px; padding:8px; margin-bottom:12px;
+  overflow:visible; background:var(--glass-3);
+  border:1px solid var(--line); border-radius:var(--radius-sm) }
+html[data-device="phone"] .dw-drawer.dw-open{
+  display:flex; animation:dwDrawerIn .26s var(--ease) }
+@keyframes dwDrawerIn{
+  from{ opacity:0; transform:translateY(-8px) }
+  to{ opacity:1; transform:none } }
+html[data-device="phone"] .dw-drawer::after{ display:none !important }
+html[data-device="phone"] .dw-drawer .subtab,
+html[data-device="phone"] .dw-drawer .ltab{
+  display:flex; align-items:center; width:100%; text-align:left;
+  border-radius:var(--radius-xs); padding:12px 13px; font-size:13.5px; white-space:normal;
+  backdrop-filter:none; -webkit-backdrop-filter:none }
+html[data-device="phone"] .dw-drawer .subtab .n,
+html[data-device="phone"] .dw-drawer .ltab .n{
+  margin-left:auto; opacity:1; color:var(--muted) }
+html[data-device="phone"] .dw-drawer .subtab.active .n,
+html[data-device="phone"] .dw-drawer .ltab.active .n{ color:rgba(255,255,255,.9) }
 </style>
 <script>
 /* ============================================================================
@@ -11433,6 +11536,118 @@ $('#shelfSort').addEventListener('change',renderShelf);
       if(!t) return;
       try{ window.scrollTo(0,0); }catch(err){}
     });
+  }catch(e){}
+})();
+
+/* ==UI-POLISH-JS-BEGIN== */
+
+/* ==UI-POLISH-JS== 手机端分模块抽屉增强层
+   ---------------------------------------------------------------------------
+   · 只插入纯展示节点（抽屉头）+ 加一个 class，不改任何 id / data-* / 表单字段
+   · 不覆盖原有点击逻辑：原 onclick 照常触发，本层只在捕获阶段负责「点完收起」
+   · 整段包在 try/catch 里，任何异常都只是「退回原生横向页签」，不会影响主流程
+   · 桌面端直接 return，零副作用
+   --------------------------------------------------------------------------- */
+(function(){
+  try{
+    var ROOT=document.documentElement;
+    if(!ROOT||!ROOT.getAttribute) return;
+    function isPhone(){ return ROOT.getAttribute('data-device')==='phone'; }
+    function labelOf(tab){
+      var c=tab.cloneNode(true), ns=c.querySelectorAll('.n'), i;
+      for(i=0;i<ns.length;i++){ if(ns[i].parentNode) ns[i].parentNode.removeChild(ns[i]); }
+      return (c.textContent||'').replace(/\s+/g,' ').trim();
+    }
+    function countOf(tab){
+      var n=tab.querySelector('.n');
+      return n?((n.textContent||'').trim()):'';
+    }
+    function activeOf(strip){
+      return strip.querySelector('.subtab.active,.ltab.active')
+          || strip.querySelector('.subtab,.ltab');
+    }
+    function sync(strip){
+      var head=strip.__dwHead; if(!head) return;
+      var act=activeOf(strip); if(!act) return;
+      var tx=head.querySelector('.dw-dh-tx'), nn=head.querySelector('.dw-dh-n');
+      if(tx) tx.textContent=labelOf(act);
+      if(nn) nn.textContent=countOf(act);
+    }
+    function close(strip){
+      if(!strip.__dwHead) return;
+      strip.classList.remove('dw-open');
+      strip.__dwHead.classList.remove('on');
+      strip.__dwHead.setAttribute('aria-expanded','false');
+    }
+    function enhance(strip){
+      if(!isPhone()||strip.__dwHead) return;
+      try{
+        var head=document.createElement('button');
+        head.type='button';
+        head.className='dw-dh';
+        head.setAttribute('aria-expanded','false');
+        head.setAttribute('aria-label','展开分模块');
+        head.innerHTML='<span class="dw-dh-tx"></span>'
+                     + '<span class="dw-dh-n"></span>'
+                     + '<span class="dw-dh-ca" aria-hidden="true">\u25BE</span>';
+        strip.parentNode.insertBefore(head,strip);
+        strip.__dwHead=head;
+        strip.classList.add('dw-drawer');
+        head.addEventListener('click',function(e){
+          e.preventDefault(); e.stopPropagation();
+          var open=strip.classList.toggle('dw-open');
+          head.classList.toggle('on',open);
+          head.setAttribute('aria-expanded',open?'true':'false');
+          if(open) sync(strip);
+        });
+        strip.addEventListener('click',function(e){
+          var t=(e.target&&e.target.closest)?e.target.closest('.subtab,.ltab'):null;
+          if(!t) return;
+          close(strip);
+          setTimeout(function(){ sync(strip); },0);
+        },true);
+        if(window.MutationObserver){
+          new MutationObserver(function(){ sync(strip); })
+            .observe(strip,{subtree:true,attributes:true,
+                            attributeFilter:['class'],characterData:true,childList:true});
+        }
+        sync(strip);
+      }catch(err){
+        try{ strip.classList.remove('dw-drawer','dw-open'); }catch(_e){}
+      }
+    }
+    function teardown(){
+      var hs=document.querySelectorAll('.dw-dh'), i, j;
+      for(i=0;i<hs.length;i++){ if(hs[i].parentNode) hs[i].parentNode.removeChild(hs[i]); }
+      var ss=document.querySelectorAll('.dw-drawer');
+      for(j=0;j<ss.length;j++){
+        ss[j].classList.remove('dw-drawer','dw-open');
+        ss[j].__dwHead=null;
+      }
+    }
+    var pending=0;
+    function run(){
+      if(!isPhone()) return;
+      var ss=document.querySelectorAll('.subtabs,.ltabs');
+      for(var i=0;i<ss.length;i++) enhance(ss[i]);
+    }
+    function schedule(){
+      if(pending) return; pending=1;
+      setTimeout(function(){ pending=0; try{ run(); }catch(_e){} },90);
+    }
+    function boot(){
+      try{
+        run();
+        if(window.MutationObserver && document.body){
+          new MutationObserver(schedule).observe(document.body,{childList:true,subtree:true});
+        }
+        window.addEventListener('devicechange',function(){
+          setTimeout(function(){ try{ if(isPhone()) run(); else teardown(); }catch(_e){} },80);
+        });
+      }catch(_e){}
+    }
+    if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot);
+    else boot();
   }catch(e){}
 })();
 </script>

@@ -1824,18 +1824,14 @@ html[data-touch="1"] .aifill::after,html[data-device="phone"] .aifill::after{
 /* 底部栏取消 → 浮层不再需要为其让位 */
 html[data-device="phone"]{ --tabbar-h:0px }
 
-/* ① 书名左边的图标 → 汉堡按钮 */
+/* ① 书名左边的品牌图标（月亮+星）→ 整块可点，直接打开导航
+      注意：运行时 dwBrandApply() 会把 DW_LOGO_SVG 注入 .logo，
+            所以这里绝不能再用 ::before 画第二套图标，否则两个图标重叠 */
 html[data-device="phone"] #editorScreen .logo.dw-burger{
-  font-size:0; cursor:pointer; -webkit-tap-highlight-color:transparent;
+  cursor:pointer; -webkit-tap-highlight-color:transparent;
   transition:transform .2s var(--spring),box-shadow .2s var(--ease) }
 html[data-device="phone"] #editorScreen .logo.dw-burger:active{ transform:scale(.9) }
-html[data-device="phone"] #editorScreen .logo.dw-burger::before{
-  content:''; width:18px; height:13px;
-  background:
-    linear-gradient(#fff 0 0) 0 0/100% 2.2px no-repeat,
-    linear-gradient(#fff 0 0) 0 50%/100% 2.2px no-repeat,
-    linear-gradient(#fff 0 0) 0 100%/100% 2.2px no-repeat;
-  border-radius:2px }
+html[data-device="phone"] #editorScreen .logo.dw-burger::before{ content:none }
 
 /* ② 侧栏 → 左侧滑出抽屉（覆盖原底部栏形态） */
 html[data-device="phone"] .sidenav{
@@ -1882,7 +1878,7 @@ html[data-device="phone"] .tab .ti{
   display:grid; place-items:center; line-height:1;
   font-size:12px; font-weight:700;
   background:var(--sunken); color:var(--muted) }
-html[data-device="phone"] .tab.active .ti{ background:rgba(255,255,255,.24); color:#fff }
+html[data-device="phone"] .tab.active .ti{ background:rgba(255,255,255,.95); color:#0f3d91 }
 html[data-device="phone"] .tab .tl{
   display:block; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
 html[data-device="phone"] .tab .ts{ display:none }
@@ -1893,6 +1889,11 @@ html[data-device="phone"] .tab .n{
   background:var(--sunken); color:var(--muted) }
 html[data-device="phone"] .tab.active .n{ background:rgba(255,255,255,.9); color:var(--fill-2) }
 html[data-device="phone"] .tab::before{ display:none }
+
+/* ③ 滚动容器内的 backdrop-filter 会让文字发糊 / 消失（Chromium 已知缺陷）
+      .subtab/.ltab 处在 overflow-x:auto 的横向滚动条里，且本身是玻璃底 —— 
+      关掉它们的模糊既修掉花屏，也和「子条目一律实色底不开模糊」的既有约定一致 */
+.subtab,.ltab{ backdrop-filter:none; -webkit-backdrop-filter:none }
 
 /* ③ 遮罩 */
 .dw-scrim{

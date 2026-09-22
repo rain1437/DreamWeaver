@@ -91,10 +91,12 @@ function apply(html, log) {
   must(count(html, '<script src=') === 0, '单文件版不允许出现外部 script 引用');
   must(html.indexOf('==UI-POLISH-CSS==') > 0, 'CSS 注入标记缺失');
   must(html.indexOf('==UI-POLISH-JS-BEGIN==') > 0, 'JS 注入标记缺失');
-  must(html.indexOf('.dw-drawer') > 0, '抽屉样式未进入产物');
-  must(html.indexOf('__dwHead') > 0, '抽屉脚本未进入产物');
+  must(html.indexOf('.dw-burger') > 0, '汉堡按钮样式未进入产物');
+  must(html.indexOf('.dw-scrim') > 0, '抽屉遮罩样式未进入产物');
+  must(html.indexOf('dw-navclose') > 0, '抽屉关闭按钮样式未进入产物');
+  must(html.indexOf('__dwNavDrawer') > 0, '抽屉脚本未进入产物');
 
-  say('收尾润色层：对比度修复 7 处 + 手机端分模块抽屉（世界树/执笔成章/角色卡详情）');
+  say('收尾润色层：对比度修复 7 处 + 手机端导航抽屉（汉堡按钮 + 侧滑目录）');
   say('注入位置：CSS -> <style> 末尾（' + css.length + ' 字符）｜JS -> 主脚本内部（' + js.length + ' 字符）');
   say('结构回验：<script> 仍为 2 个、<style> 仍为 1 个、零外部引用');
   return html;

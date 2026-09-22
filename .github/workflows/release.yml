@@ -14,10 +14,10 @@ jobs:
     name: 打包并创建 Release
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: 构建 + 测试
         run: |
@@ -34,7 +34,7 @@ jobs:
           cd dist && zip -r ../DreamWeaver-网站包.zip . && cd ..
 
       - name: 创建 Release 并上传附件
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           name: DreamWeaver ${{ github.ref_name }}
           draft: false

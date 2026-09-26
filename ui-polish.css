@@ -227,3 +227,155 @@ html[data-device="phone"] #editorScreen .logo.dw-burger{
 html[data-device="phone"] .dw-navclose{
   width:44px; height:44px; flex:0 0 44px; font-size:15px }
 html[data-device="phone"] .sidenav-h{ padding-bottom:10px }
+
+/* 手机端宽度塌缩修复
+   --------------------------------------------------------------------------
+   实测：390px 视口上 #tab-write 竟有 568px 宽（超出 178px），右侧被裁 →
+         这就是「内容缺失」的真因。弹性项默认 min-width:auto，会拒绝收缩到
+         内容最小宽度以下，于是 #panels → .panel → .work → .card 整条链被顶宽。
+   做法：给手机端整条布局链补 min-width:0 + max-width:100%，让它们老实按
+         容器宽度收缩；配合已有的 overflow:hidden，内容改为「内部滚动」而不是
+         「右侧裁掉」。这是纯宽度约束，不改任何视觉样式。
+   ========================================================================== */
+html[data-device="phone"] .workspace,
+html[data-device="phone"] .panels,
+html[data-device="phone"] .panels > .panel,
+html[data-device="phone"] .work,
+html[data-device="phone"] .work > *,
+html[data-device="phone"] .card,
+html[data-device="phone"] .grid,
+html[data-device="phone"] .row,
+html[data-device="phone"] .row3,
+html[data-device="phone"] #bookGrid{ min-width:0; max-width:100%; box-sizing:border-box }
+
+/* 手机聊天面板布局修复 */
+/* --------------------------------------------------------------------------
+   场景：手机端【执笔成章 → 💬 与 AI 共创】
+
+   实测根因（DOM 本来就是对的，.composer 与 .chatlog 平级）：
+     · 真实层级是 #tab-write > .work > .card > #sub-chat（中间隔着 .work）
+     · .chatlog 写的是固定高度 height:calc(var(--vh,1vh)*56)，不是 flex:1
+     · .composer 只是普通流式元素跟在它后面
+     · 两者都在 .panel.active{overflow-y:auto} 的滚动容器里 → 一起被滚走
+
+   做法：只在【与AI共创】激活时，把
+         #tab-write → .work → .card → #sub-chat 四级改成垂直弹性壳：
+           .chat-head  flex:0 0 auto            （固定，不压缩、不滚动）
+           #chatLog    flex:1; min-height:0; overflow-y:auto（吃掉剩余高度，只它内部滚）
+           .composer   flex:0 0 auto            （与上面两者平级，固定可视区底部）
+
+   作用域：全部用 :has(#sub-chat:not([style*="none"])) 限定 ——
+          其他子面板（正文精修/目录阅览/记忆卷宗/伏笔罗盘）、
+          其他标签页（创世设定/世界树/角色星图/文风熔炉）与桌面端
+          完全不受影响；不支持 :has() 的旧浏览器自动退回今天的行为。
+   ⚠ 纯 CSS，未改任何 script 业务逻辑。
+   ========================================================================== */
+
+/* ① 顶层面板：交出滚动权，变成弹性列 */
+html[data-device="phone"] #tab-write:has(#sub-chat:not([style*="none"])){
+  display:flex; flex-direction:column; min-height:0; overflow:hidden; }
+html[data-device="phone"] #tab-write:has(#sub-chat:not([style*="none"])) > .subtabs{
+  flex:0 0 auto; margin-bottom:8px; }
+
+/* ② 中间层 .work：由 grid 改为一列弹性，撑满剩余高度 */
+html[data-device="phone"] #tab-write:has(#sub-chat:not([style*="none"])) > .work{
+  flex:1 1 auto; min-height:0; display:flex; flex-direction:column;
+  align-items:stretch; gap:10px; overflow:hidden; }
+
+/* ③ 章节工坊那张卡：保持自然高度，不拉伸 */
+html[data-device="phone"] #tab-write:has(#sub-chat:not([style*="none"]))
+  > .work > .card:not(:has(#sub-chat)){ flex:0 0 auto; margin-bottom:0 !important; }
+
+/* ④ 含 #sub-chat 的那张卡：吃掉剩余高度，把滚动权交给内部 */
+html[data-device="phone"] #tab-write:has(#sub-chat:not([style*="none"]))
+  .card:has(#sub-chat){
+  flex:1 1 auto; min-height:0; display:flex; flex-direction:column;
+  overflow:hidden; margin-bottom:0 !important; }
+
+/* ⑤ #sub-chat 自身撑满并纵向弹性 */
+html[data-device="phone"] #tab-write:has(#sub-chat:not([style*="none"])) #sub-chat{
+  flex:1 1 auto; min-height:0; display:flex; flex-direction:column; overflow:hidden; }
+
+/* ⑥ chat-head：固定高度，不压缩，不滚动（高级选项浮层同样不拉伸） */
+html[data-device="phone"] #tab-write:has(#sub-chat:not([style*="none"])) #sub-chat > .chat-head,
+html[data-device="phone"] #tab-write:has(#sub-chat:not([style*="none"])) #sub-chat > .popover{
+  flex:0 0 auto; }
+
+/* ⑦ 聊天区：吃掉剩余高度，只有它内部滚动 */
+html[data-device="phone"] #tab-write:has(#sub-chat:not([style*="none"])) #sub-chat > #chatLog{
+  flex:1 1 auto; min-height:0;
+  height:auto; max-height:none;          /* 覆盖原来的 56vh 固定高度 */
+  overflow-y:auto; overflow-x:hidden;
+  -webkit-overflow-scrolling:touch; overscroll-behavior:contain; }
+
+/* ⑧ 输入区：与 chat-head / #chatLog 平级，固定在可视区底部 */
+html[data-device="phone"] #tab-write:has(#sub-chat:not([style*="none"])) #sub-chat > .composer{
+  flex:0 0 auto;                        /* 绝不压缩、绝不被滚走 */
+  margin-top:10px; }
+
+/* ⑧b 宽度约束：弹性项默认 min-width:auto，会拒绝收缩到内容最小宽度以下，
+      导致 #sub-chat / .chat-head 被「顶宽」到 544px（在 390px 视口上溢出）。
+      给整条链补 min-width:0，让内容按容器宽度正常换行而不是溢出。 */
+html[data-device="phone"] #tab-write:has(#sub-chat:not([style*="none"])) > .work,
+html[data-device="phone"] #tab-write:has(#sub-chat:not([style*="none"])) .card:has(#sub-chat),
+html[data-device="phone"] #tab-write:has(#sub-chat:not([style*="none"])) #sub-chat,
+html[data-device="phone"] #tab-write:has(#sub-chat:not([style*="none"])) #sub-chat > .chat-head,
+html[data-device="phone"] #tab-write:has(#sub-chat:not([style*="none"])) #sub-chat > #chatLog,
+html[data-device="phone"] #tab-write:has(#sub-chat:not([style*="none"])) #sub-chat > .composer{
+  min-width:0; max-width:100%; box-sizing:border-box; }
+
+/* ⑨ 键盘避让：复用已有的 data-kb / --kb-h（由 visualViewport 驱动）
+      Android 走 interactive-widget=resizes-content，--vh 自己会缩；
+      iOS Safari 不支持该 meta，这里再按 --kb-h 把外壳高度减掉，双保险。 */
+html[data-device="phone"][data-kb="1"] #editorScreen{
+  height:calc(var(--vh,1vh) * 100 - var(--kb-h,0px));
+  max-height:calc(var(--vh,1vh) * 100 - var(--kb-h,0px)); }
+html[data-device="phone"][data-kb="1"] #tab-write:has(#sub-chat:not([style*="none"])) #sub-chat > .composer{
+  position:static; bottom:auto; }        /* 外壳已让位，不再需要原来的 sticky */
+
+/* 手机聊天面板布局修复 · 收纳与压缩
+   --------------------------------------------------------------------------
+   实测：320x568 上 章节卡 124px + 聊天头 63px + 输入区 159px，
+         聊天区只剩 34px —— 这才是「内容缺失」的真因（不是被裁，是被挤没）。
+   做法：
+     ① 章节工坊卡手机端可收纳（复用布局引擎的 .acc-toggle + checkbox 模式，
+        纯展示节点，不碰业务逻辑）；有章节时默认收起，把高度让给聊天区。
+     ② 压缩输入区 / 聊天头 / 卡片内边距，把高度还给聊天区。
+   -------------------------------------------------------------------------- */
+
+/* ① 章节工坊：可收纳 */
+html[data-device="phone"] #tab-write > .work > .card.cm-foldbox{ position:relative }
+html[data-device="phone"] #tab-write > .work > .card.cm-foldbox > .chapter-list{ display:none }
+html[data-device="phone"] #tab-write > .work > .card.cm-foldbox
+  > input.acc-toggle:checked ~ .chapter-list{ display:flex }
+
+/* 透明点击层盖在 h3 上：标题本体不动，仍实时显示「第 x / y 章」 */
+html[data-device="phone"] #tab-write > .work > .card.cm-foldbox > h3{
+  margin-bottom:0; padding-right:26px;
+  display:flex; align-items:center; min-height:34px }
+html[data-device="phone"] .cm-foldhit{
+  position:absolute; left:0; right:0; top:0; height:46px; z-index:3;
+  cursor:pointer; -webkit-tap-highlight-color:transparent;
+  border-radius:var(--radius-sm) var(--radius-sm) 0 0 }
+html[data-device="phone"] .cm-foldhit::after{
+  content:'\25B8'; position:absolute; right:11px; top:50%;
+  transform:translateY(-50%); font-size:12px; color:var(--muted);
+  transition:transform .22s var(--ease) }
+html[data-device="phone"] #tab-write > .work > .card.cm-foldbox
+  > input.acc-toggle:checked ~ .cm-foldhit::after{
+  transform:translateY(-50%) rotate(90deg) }
+html[data-device="phone"] .cm-foldhit:active{ background:var(--lay-tint) }
+
+/* ② 压缩：把高度还给聊天区 */
+html[data-device="phone"] .composer{ padding:9px 11px }
+html[data-device="phone"] .composer textarea{ min-height:52px; line-height:1.55; padding:2px 4px }
+html[data-device="phone"] .composer-foot{ margin-top:6px; gap:7px }
+/* 聊天头：保持可换行（nowrap 会在 320px 上把 chip+分段+按钮挤溢出），
+   改为压缩内部控件，让它尽量一行放下；真放不下时自然换行而不是溢出 */
+html[data-device="phone"] #sub-chat > .chat-head{ padding-bottom:7px; gap:7px }
+html[data-device="phone"] #sub-chat > .chat-head .seg button{ padding:6px 9px; font-size:12.5px }
+html[data-device="phone"] #sub-chat > .chat-head .iconbtn{ width:36px; height:36px; flex:0 0 36px }
+html[data-device="phone"] #chatChapterChip{
+  max-width:34vw; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+html[data-device="phone"] #sub-chat > #chatLog{ gap:10px; padding-bottom:2px }
+html[data-device="phone"] #tab-write > .work > .card{ padding:11px }

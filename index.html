@@ -2110,52 +2110,109 @@ html[data-device="phone"][data-kb="1"] #editorScreen{
 html[data-device="phone"][data-kb="1"] #tab-write:has(#sub-chat:not([style*="none"])) #sub-chat > .composer{
   position:static; bottom:auto; }        /* 外壳已让位，不再需要原来的 sticky */
 
-/* 手机聊天面板布局修复 · 收纳与压缩
+/* 手机聊天面板布局修复 · 压缩间距
    --------------------------------------------------------------------------
-   实测：320x568 上 章节卡 124px + 聊天头 63px + 输入区 159px，
-         聊天区只剩 34px —— 这才是「内容缺失」的真因（不是被裁，是被挤没）。
-   做法：
-     ① 章节工坊卡手机端可收纳（复用布局引擎的 .acc-toggle + checkbox 模式，
-        纯展示节点，不碰业务逻辑）；有章节时默认收起，把高度让给聊天区。
-     ② 压缩输入区 / 聊天头 / 卡片内边距，把高度还给聊天区。
+   说明：只压缩输入区 / 聊天头 / 卡片内边距，把高度让给聊天区。
+         （曾尝试把章节工坊做成可折叠「收纳」，已按要求还原，不再收纳。）
    -------------------------------------------------------------------------- */
 
-/* ① 章节工坊：可收纳 */
-html[data-device="phone"] #tab-write > .work > .card.cm-foldbox{ position:relative }
-html[data-device="phone"] #tab-write > .work > .card.cm-foldbox > .chapter-list{ display:none }
-html[data-device="phone"] #tab-write > .work > .card.cm-foldbox
-  > input.acc-toggle:checked ~ .chapter-list{ display:flex }
-
-/* 透明点击层盖在 h3 上：标题本体不动，仍实时显示「第 x / y 章」 */
-html[data-device="phone"] #tab-write > .work > .card.cm-foldbox > h3{
-  margin-bottom:0; padding-right:26px;
-  display:flex; align-items:center; min-height:34px }
-html[data-device="phone"] .cm-foldhit{
-  position:absolute; left:0; right:0; top:0; height:46px; z-index:3;
-  cursor:pointer; -webkit-tap-highlight-color:transparent;
-  border-radius:var(--radius-sm) var(--radius-sm) 0 0 }
-html[data-device="phone"] .cm-foldhit::after{
-  content:'\25B8'; position:absolute; right:11px; top:50%;
-  transform:translateY(-50%); font-size:12px; color:var(--muted);
-  transition:transform .22s var(--ease) }
-html[data-device="phone"] #tab-write > .work > .card.cm-foldbox
-  > input.acc-toggle:checked ~ .cm-foldhit::after{
-  transform:translateY(-50%) rotate(90deg) }
-html[data-device="phone"] .cm-foldhit:active{ background:var(--lay-tint) }
-
-/* ② 压缩：把高度还给聊天区 */
+/* ② 压缩：把高度还给聊天区
+      实测 320x568：聊天头换行成两排 110px、按钮行被长提示挤成三排 214px，
+      两者相加 > 聊天卡高度 → 聊天区被压到 4px 且输入区溢出容器。
+      对策：强制两行都单排显示，长文本改用省略号截断。 */
 html[data-device="phone"] .composer{ padding:9px 11px }
 html[data-device="phone"] .composer textarea{ min-height:52px; line-height:1.55; padding:2px 4px }
-html[data-device="phone"] .composer-foot{ margin-top:6px; gap:7px }
-/* 聊天头：保持可换行（nowrap 会在 320px 上把 chip+分段+按钮挤溢出），
-   改为压缩内部控件，让它尽量一行放下；真放不下时自然换行而不是溢出 */
-html[data-device="phone"] #sub-chat > .chat-head{ padding-bottom:7px; gap:7px }
-html[data-device="phone"] #sub-chat > .chat-head .seg button{ padding:6px 9px; font-size:12.5px }
-html[data-device="phone"] #sub-chat > .chat-head .iconbtn{ width:36px; height:36px; flex:0 0 36px }
+
+/* --- 聊天头：挤进一行 --- */
+html[data-device="phone"] #sub-chat > .chat-head{ padding-bottom:7px; gap:5px; flex-wrap:nowrap }
+html[data-device="phone"] #sub-chat > .chat-head > *{ min-width:0 }
 html[data-device="phone"] #chatChapterChip{
-  max-width:34vw; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+  flex:0 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  font-size:11.5px; padding:4px 8px }
+html[data-device="phone"] #sub-chat > .chat-head .seg{ flex:0 1 auto; min-width:0 }
+html[data-device="phone"] #sub-chat > .chat-head .seg button{
+  padding:4px 7px; font-size:11.5px; white-space:nowrap }
+html[data-device="phone"] #sub-chat > .chat-head .iconbtn{
+  width:32px; height:32px; flex:0 0 32px; font-size:13px }
+
+/* --- 输入区按钮行：也挤进一行，长提示截断 --- */
+html[data-device="phone"] .composer-foot{ margin-top:6px; gap:6px; flex-wrap:nowrap }
+html[data-device="phone"] .composer-foot > *{ min-width:0 }
+html[data-device="phone"] #ctxInfo{
+  flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  font-size:11px }
+html[data-device="phone"] .composer-foot #btnDraftGist{ flex:0 0 auto; font-size:12px; padding:6px 9px }
+html[data-device="phone"] .composer-foot #btnSend,
+html[data-device="phone"][data-orient="portrait"] .composer-foot #btnSend{ flex:0 0 auto; padding:6px 16px }
+
 html[data-device="phone"] #sub-chat > #chatLog{ gap:10px; padding-bottom:2px }
 html[data-device="phone"] #tab-write > .work > .card{ padding:11px }
+
+/* 手机聊天面板布局修复 · 输入框瘦身 + 整体密度收缩
+   --------------------------------------------------------------------------
+   ① 输入框：原来它是「textarea(52px) + 按钮行(44px)」上下两段 = 131px，占屏太多。
+      改为并成一行：[textarea][✦梗概][出文]，高度取两者较大值 → 约 58px。
+      textarea 默认只占 1 行，输入时由 ui-polish.client.js 的 input 监听
+      按「真实内容」自动变高换行，到上限后内部滚动。
+   ② 整体密度：手机端把内边距 / 间距 / 圆角统一压到约 2/3，字号小幅下调
+      （字号不按 1/3 缩，否则会低于可读下限，也与「文字不能过小」的要求冲突）。
+   -------------------------------------------------------------------------- */
+
+/* ---------- ① 输入区：并成一行 ---------- */
+html[data-device="phone"] #sub-chat > .composer{
+  display:flex; flex-direction:row; align-items:flex-end; gap:6px;
+  padding:6px 8px; margin-top:8px; }
+html[data-device="phone"] #sub-chat > .composer > textarea{
+  flex:1 1 auto; min-width:0;
+  min-height:38px; max-height:112px;      /* 1 行起步，最高约 6 行 */
+  height:auto; overflow-y:auto; resize:none;
+  line-height:1.5; padding:2px 4px; }
+/* 注：这里刻意不用 field-sizing:content —— 它会把很长的 placeholder 也算进高度，
+   导致空输入框一上来就被撑到上限。改由脚本只按「真实内容」算高度。 */
+/* 按钮行回到同一行，不再单独占一行 */
+html[data-device="phone"] #sub-chat > .composer > .composer-foot{
+  flex:0 0 auto; margin-top:0; gap:5px;
+  flex-direction:row; flex-wrap:nowrap; align-items:center; }
+/* 上下文提示很占宽，手机上收敛掉（信息在「记忆卷宗」里更全） */
+html[data-device="phone"] #ctxInfo{ display:none }
+/* 「帮我写梗概」收敛成图标按钮，把宽度让给输入框（title 仍保留说明） */
+html[data-device="phone"] #btnDraftGist{
+  font-size:0; width:44px; min-width:44px; flex:0 0 44px;
+  padding:0; display:inline-flex; align-items:center; justify-content:center; }
+html[data-device="phone"] #btnDraftGist::before{ content:'\2726'; font-size:15px; line-height:1 }
+html[data-device="phone"] #sub-chat > .composer > .composer-foot #btnSend{
+  flex:0 0 auto; min-width:56px; padding:6px 14px; }
+
+/* ---------- ② 整体密度：手机端压缩到约 2/3 ---------- */
+html[data-device="phone"]:not([data-density="compact"]) .card{ padding:8px }
+html[data-device="phone"][data-density="compact"] .card{ padding:7px }
+html[data-device="phone"] .card{ border-radius:var(--radius-sm); margin-bottom:6px !important }
+html[data-device="phone"] .card h3{ margin:0 0 4px; font-size:13.5px }
+html[data-device="phone"] .card>*:last-child{ margin-bottom:0 }
+html[data-device="phone"] .stickytop{ margin-bottom:5px;
+  padding:calc(4px + env(safe-area-inset-top,0px)) 12px 4px }
+html[data-device="phone"] .topbar{gap:8px}
+html[data-device="phone"] .subtabs,
+html[data-device="phone"] .ltabs{ margin-bottom:6px; padding:0 0 2px }
+html[data-device="phone"] .subtab,
+html[data-device="phone"] .ltab{ padding:7px 12px; font-size:12.5px }
+html[data-device="phone"] .grid,
+html[data-device="phone"] .row,
+html[data-device="phone"] .row3{ gap:6px }
+html[data-device="phone"]:not([data-density="compact"]) .work{ gap:7px }
+html[data-device="phone"] label{ margin-top:5px; margin-bottom:2px; font-size:12px }
+html[data-device="phone"] .hint{ line-height:1.45; margin-top:4px; font-size:11.5px }
+html[data-device="phone"] .toolbar{ gap:5px; margin-top:5px }
+html[data-device="phone"] .item{ padding:8px 10px; margin-bottom:5px }
+html[data-device="phone"] .lbody,
+html[data-device="phone"] .lgbody{ padding:7px }
+html[data-device="phone"] .lgroup{ margin-bottom:6px }
+html[data-device="phone"] #sub-chat > #chatLog{ gap:8px; padding-bottom:2px }
+html[data-device="phone"] .scroll,
+html[data-device="phone"] .chapter-list,
+html[data-device="phone"] .toc-list{ gap:5px }
+html[data-device="phone"] .chapter-list{ max-height:min(300px,34vh) }
+html[data-device="phone"] .top-actions{ gap:6px }
 </style>
 <script>
 /* ============================================================================
@@ -12045,70 +12102,53 @@ $('#shelfSort').addEventListener('change',renderShelf);
   }catch(e){}
 })();
 
-/* ==UI-POLISH-JS3== 手机端「章节工坊」收纳（纯展示节点，零业务逻辑）
+/* ==UI-POLISH-JS4== 输入框「1 行起步 + 随内容自动变高」（纯展示行为）
    ---------------------------------------------------------------------------
-   · 只插入 checkbox + 透明 label，复用布局引擎既有的 .acc-toggle 模式
-   · 原标题 <h3> 一行不动（仍由业务代码实时更新「第 x / y 章」）
-   · 有章节 → 默认收起（把高度让给聊天区）；无章节 → 默认展开（否则找不到「新建一章」）
-   · 不读不写任何 state / localStorage；出错静默退回原样
+   · 只按【真实输入内容】算高度 —— 刻意忽略 placeholder：那段提示文字很长，
+     在窄输入框里会换行，一上来就把空输入框撑到上限（实测 112px）。
+   · 空 → 固定 1 行；内容变多 → 长高；到上限 → 内部滚动。
+   · 不读写任何业务 state / localStorage，不改任何业务函数。
    --------------------------------------------------------------------------- */
 (function(){
   try{
-    var ROOT=document.documentElement, seq=0;
-    function isPhone(){ return ROOT.getAttribute('data-device')==='phone'; }
+    if(window.__dwGrowReady) return; window.__dwGrowReady=1;
+    var ta=document.querySelector('#chatInput');
+    if(!ta) return;
+    var MIN=38, MAX=112;
 
-    function buildFold(){
-      if(!isPhone()) return;
-      var card=document.querySelector('#tab-write > .work > .card');
-      if(!card||card.__cmFold) return;
-      var list=card.querySelector('.chapter-list');
-      if(!list) return;                       /* 不是章节工坊卡，跳过 */
-      card.__cmFold=1;
-      try{
-        card.classList.add('cm-foldbox');
-        var id='cm-fold-'+(++seq);
-        var cb=document.createElement('input');
-        cb.type='checkbox'; cb.className='acc-toggle'; cb.id=id;
-        cb.setAttribute('tabindex','-1'); cb.setAttribute('aria-hidden','true');
-        var hit=document.createElement('label');
-        hit.className='cm-foldhit'; hit.setAttribute('for',id);
-        hit.setAttribute('aria-label','展开或收起章节列表');
-        /* 顺序必须是 [checkbox, label, h3, .chapter-list]：
-           cb 要在最前，:checked ~ .chapter-list 才能命中 */
-        card.insertBefore(hit, card.firstChild);
-        card.insertBefore(cb, hit);
-        /* 用户手动点过之后就不再自动改；否则每次巡检都按当前内容重算默认态
-           （首次执行时 #chapterList 往往还是空的，必须等它渲染出来再定） */
-        cb.addEventListener('change',function(){ cb.__touched=1; });
-        card.__cmRefresh=function(){
-          if(cb.__touched) return;
-          /* 判定依据必须是「有没有章节行 .ch」——
-             注意 #btnSideNew（＋新建一章）在空/非空两种分支里都会渲染，不能用它判空 */
-          var hasChaps=false;
-          try{ hasChaps=!!list.querySelector('.ch'); }catch(e){}
-          cb.checked = !hasChaps;   /* 有章节 → 收起；无章节 → 展开（否则找不到「＋新建一章」） */
-        };
-        card.__cmRefresh();
-      }catch(err){
-        try{ card.classList.remove('cm-foldbox'); }catch(_e){}
-      }
-    }
-    /* 面板内容会被业务代码重渲染 → 低频巡检 + DOM 变更时补建 */
-    function tick(){
-      try{ buildFold(); }catch(e){}
-      try{ var c=document.querySelector('#tab-write > .work > .card');
-           if(c&&c.__cmRefresh) c.__cmRefresh(); }catch(e){}
-    }
-    tick();
-    setInterval(tick, 1500);
+    /* 手机端把超长 placeholder 换短，保证 1 行也读得全 */
     try{
-      if(window.MutationObserver && document.body){
-        var t=0;
-        new MutationObserver(function(){
-          if(t) return; t=setTimeout(function(){ t=0; try{ buildFold(); }catch(e){} },200);
-        }).observe(document.body,{childList:true,subtree:true});
+      if(document.documentElement.getAttribute('data-device')==='phone'){
+        if(ta.__phFull===undefined) ta.__phFull=ta.getAttribute('placeholder')||'';
+        ta.setAttribute('placeholder','写下这一章要写的内容…');
       }
     }catch(e){}
+
+    function isPhone(){ return document.documentElement.getAttribute('data-device')==='phone'; }
+
+    function fit(){
+      try{
+        /* 桌面端一律不动：清掉脚本写过的内联高度，交回 CSS 管 */
+        if(!isPhone()){ ta.style.height=''; ta.style.overflowY=''; return; }
+        if(!(ta.value||'').length){          /* 空：固定 1 行，不受 placeholder 影响 */
+          ta.style.height=MIN+'px';
+          ta.style.overflowY='hidden';
+          return;
+        }
+        ta.style.height='auto';
+        var need=ta.scrollHeight;
+        ta.style.height=Math.min(Math.max(need,MIN),MAX)+'px';
+        ta.style.overflowY = need>MAX ? 'auto' : 'hidden';
+      }catch(e){}
+    }
+    window.addEventListener('devicechange',function(){ setTimeout(fit,80); });
+    ta.addEventListener('input',fit);
+    ta.addEventListener('change',fit);
+    window.addEventListener('resize',fit);
+    document.addEventListener('click',function(e){
+      if(e.target&&e.target.closest&&e.target.closest('.subtab')) setTimeout(fit,60);
+    },true);
+    fit();
   }catch(e){}
 })();
 </script>

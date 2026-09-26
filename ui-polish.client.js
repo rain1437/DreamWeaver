@@ -211,69 +211,52 @@
   }catch(e){}
 })();
 
-/* ==UI-POLISH-JS3== 手机端「章节工坊」收纳（纯展示节点，零业务逻辑）
+/* ==UI-POLISH-JS4== 输入框「1 行起步 + 随内容自动变高」（纯展示行为）
    ---------------------------------------------------------------------------
-   · 只插入 checkbox + 透明 label，复用布局引擎既有的 .acc-toggle 模式
-   · 原标题 <h3> 一行不动（仍由业务代码实时更新「第 x / y 章」）
-   · 有章节 → 默认收起（把高度让给聊天区）；无章节 → 默认展开（否则找不到「新建一章」）
-   · 不读不写任何 state / localStorage；出错静默退回原样
+   · 只按【真实输入内容】算高度 —— 刻意忽略 placeholder：那段提示文字很长，
+     在窄输入框里会换行，一上来就把空输入框撑到上限（实测 112px）。
+   · 空 → 固定 1 行；内容变多 → 长高；到上限 → 内部滚动。
+   · 不读写任何业务 state / localStorage，不改任何业务函数。
    --------------------------------------------------------------------------- */
 (function(){
   try{
-    var ROOT=document.documentElement, seq=0;
-    function isPhone(){ return ROOT.getAttribute('data-device')==='phone'; }
+    if(window.__dwGrowReady) return; window.__dwGrowReady=1;
+    var ta=document.querySelector('#chatInput');
+    if(!ta) return;
+    var MIN=38, MAX=112;
 
-    function buildFold(){
-      if(!isPhone()) return;
-      var card=document.querySelector('#tab-write > .work > .card');
-      if(!card||card.__cmFold) return;
-      var list=card.querySelector('.chapter-list');
-      if(!list) return;                       /* 不是章节工坊卡，跳过 */
-      card.__cmFold=1;
-      try{
-        card.classList.add('cm-foldbox');
-        var id='cm-fold-'+(++seq);
-        var cb=document.createElement('input');
-        cb.type='checkbox'; cb.className='acc-toggle'; cb.id=id;
-        cb.setAttribute('tabindex','-1'); cb.setAttribute('aria-hidden','true');
-        var hit=document.createElement('label');
-        hit.className='cm-foldhit'; hit.setAttribute('for',id);
-        hit.setAttribute('aria-label','展开或收起章节列表');
-        /* 顺序必须是 [checkbox, label, h3, .chapter-list]：
-           cb 要在最前，:checked ~ .chapter-list 才能命中 */
-        card.insertBefore(hit, card.firstChild);
-        card.insertBefore(cb, hit);
-        /* 用户手动点过之后就不再自动改；否则每次巡检都按当前内容重算默认态
-           （首次执行时 #chapterList 往往还是空的，必须等它渲染出来再定） */
-        cb.addEventListener('change',function(){ cb.__touched=1; });
-        card.__cmRefresh=function(){
-          if(cb.__touched) return;
-          /* 判定依据必须是「有没有章节行 .ch」——
-             注意 #btnSideNew（＋新建一章）在空/非空两种分支里都会渲染，不能用它判空 */
-          var hasChaps=false;
-          try{ hasChaps=!!list.querySelector('.ch'); }catch(e){}
-          cb.checked = !hasChaps;   /* 有章节 → 收起；无章节 → 展开（否则找不到「＋新建一章」） */
-        };
-        card.__cmRefresh();
-      }catch(err){
-        try{ card.classList.remove('cm-foldbox'); }catch(_e){}
-      }
-    }
-    /* 面板内容会被业务代码重渲染 → 低频巡检 + DOM 变更时补建 */
-    function tick(){
-      try{ buildFold(); }catch(e){}
-      try{ var c=document.querySelector('#tab-write > .work > .card');
-           if(c&&c.__cmRefresh) c.__cmRefresh(); }catch(e){}
-    }
-    tick();
-    setInterval(tick, 1500);
+    /* 手机端把超长 placeholder 换短，保证 1 行也读得全 */
     try{
-      if(window.MutationObserver && document.body){
-        var t=0;
-        new MutationObserver(function(){
-          if(t) return; t=setTimeout(function(){ t=0; try{ buildFold(); }catch(e){} },200);
-        }).observe(document.body,{childList:true,subtree:true});
+      if(document.documentElement.getAttribute('data-device')==='phone'){
+        if(ta.__phFull===undefined) ta.__phFull=ta.getAttribute('placeholder')||'';
+        ta.setAttribute('placeholder','写下这一章要写的内容…');
       }
     }catch(e){}
+
+    function isPhone(){ return document.documentElement.getAttribute('data-device')==='phone'; }
+
+    function fit(){
+      try{
+        /* 桌面端一律不动：清掉脚本写过的内联高度，交回 CSS 管 */
+        if(!isPhone()){ ta.style.height=''; ta.style.overflowY=''; return; }
+        if(!(ta.value||'').length){          /* 空：固定 1 行，不受 placeholder 影响 */
+          ta.style.height=MIN+'px';
+          ta.style.overflowY='hidden';
+          return;
+        }
+        ta.style.height='auto';
+        var need=ta.scrollHeight;
+        ta.style.height=Math.min(Math.max(need,MIN),MAX)+'px';
+        ta.style.overflowY = need>MAX ? 'auto' : 'hidden';
+      }catch(e){}
+    }
+    window.addEventListener('devicechange',function(){ setTimeout(fit,80); });
+    ta.addEventListener('input',fit);
+    ta.addEventListener('change',fit);
+    window.addEventListener('resize',fit);
+    document.addEventListener('click',function(e){
+      if(e.target&&e.target.closest&&e.target.closest('.subtab')) setTimeout(fit,60);
+    },true);
+    fit();
   }catch(e){}
 })();

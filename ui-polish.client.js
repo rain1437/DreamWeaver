@@ -272,3 +272,79 @@
     },true);
   }catch(e){}
 })();
+
+/* ==UI-POLISH-JS5== 手机 App 导出兜底（纯展示层，复用现有 openDlg / toast）
+   ---------------------------------------------------------------------------
+   问题：所有导出（作品TXT / 世界书 / 角色卡 / 整库备份 / 快照）都走 download()，
+         而它在内部用 <a download> + blob URL —— 安卓 WebView 不支持这套，
+         点了完全没反应，所以手机上「导出小说文本」「数据保险」都用不了。
+   做法：运行时包装 download()；检测到处于 App/WebView 时改为弹出「内容 + 一键复制」
+         面板（复制到剪贴板后粘到备忘录/微信/邮件即可保存）。
+         普通手机浏览器仍然走原生下载，行为不变。
+   --------------------------------------------------------------------------- */
+(function(){
+  try{
+    if(window.__dwDlReady) return; window.__dwDlReady=1;
+    var _dl=window.download;
+    if(typeof _dl!=='function') return;
+
+    function inApp(){
+      try{
+        if(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform()) return true;
+        if(window.capacitor&&window.capacitor.isNativePlatform) return true;
+        if(window.cordova||window.AndroidBridge) return true;
+        var u=navigator.userAgent||'';
+        if(/\bwv\b|; wv\)/.test(u)) return true;
+        var p=location.protocol||'';
+        if(p==='capacitor:'||p==='ionic:') return true;
+        if(location.hostname==='localhost'&&/^https?:$/.test(p)&&/Android|iPhone|iPad/i.test(u)) return true;
+      }catch(e){}
+      return false;
+    }
+    function esc2(s){
+      return String(s==null?'':s).replace(/[&<>]/g,function(c){
+        return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; });
+    }
+    function copyText(t){
+      var done=false;
+      try{
+        var ta=document.createElement('textarea');
+        ta.value=t; ta.setAttribute('readonly','');
+        ta.style.cssText='position:fixed;left:-9999px;top:0';
+        document.body.appendChild(ta);
+        ta.select(); ta.setSelectionRange(0,t.length);
+        done=document.execCommand('copy');
+        document.body.removeChild(ta);
+      }catch(e){}
+      if(done){ try{ toast('已复制到剪贴板'); }catch(e){} return; }
+      try{
+        if(navigator.clipboard&&navigator.clipboard.writeText){
+          navigator.clipboard.writeText(t).then(function(){ toast('已复制到剪贴板'); },
+            function(){ toast('复制失败，请长按下方文字手动全选'); });
+          return;
+        }
+      }catch(e){}
+      try{ toast('复制失败，请长按下方文字手动全选'); }catch(e){}
+    }
+    function showExport(name,text){
+      var t=String(text==null?'':text);
+      var id='__dwExpTA';
+      var html='<h3>导出：'+esc2(name||'内容')+'</h3>'
+        +'<div class="hint" style="margin-top:0">手机 App 的内置浏览器不支持直接下载文件。'
+        +'内容已放在下面，点「复制全部」后粘贴到备忘录 / 微信 / 邮件 里保存即可。</div>'
+        +'<textarea id="'+id+'" readonly style="width:100%;height:36vh;font-size:12px;line-height:1.5;'
+        +'white-space:pre;overflow:auto;margin-top:8px">'+esc2(t)+'</textarea>'
+        +'<div class="hint">共 '+t.length+' 字符</div>';
+      try{
+        openDlg(html,[
+          {label:'关闭'},
+          {label:'复制全部',cls:'primary',fn:function(){ copyText(t); return false; }}
+        ]);
+      }catch(e){ try{ alert('导出失败：'+(e&&e.message||e)); }catch(_e){} }
+    }
+    window.download=function(name,text,mime){
+      if(!inApp()) return _dl.apply(this,arguments);
+      showExport(name,text);
+    };
+  }catch(e){}
+})();

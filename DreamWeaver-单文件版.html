@@ -2213,6 +2213,67 @@ html[data-device="phone"] .chapter-list,
 html[data-device="phone"] .toc-list{ gap:5px }
 html[data-device="phone"] .chapter-list{ max-height:min(300px,34vh) }
 html[data-device="phone"] .top-actions{ gap:6px }
+
+/* 手机聊天面板布局修复 · 分段控件不再被压扁 + 省电
+   --------------------------------------------------------------------------
+   ① 出文/讨论/改稿 显示错乱：我早先写的 .seg{flex:0 1 auto} 允许它被压缩到
+      内容宽度以下，而它 overflow:visible → 320px 上「改稿」会溢出 28px 盖住
+      右侧 ✦ 按钮。改为不可压缩，让带省略号的 chip 去承担收缩。
+   ② 省电（APK 上发热严重）：实测 5 个无限循环动画全在背景层，
+      其中 3 个是全屏 filter:blur(26px) 的波层 —— 每帧重算全屏模糊，
+      手机持续满载。停掉这些循环动画后，模糊只需算一次即可缓存。
+      另外把 152 个 backdrop-filter 收敛到只留必要几处。
+   -------------------------------------------------------------------------- */
+
+/* ---------- ① 分段控件不可压缩，改由 chip 收缩 ---------- */
+html[data-device="phone"] #sub-chat > .chat-head .seg{ flex:0 0 auto; min-width:0 }
+html[data-device="phone"] #sub-chat > .chat-head .seg button{
+  padding:4px 6px; font-size:11px; white-space:nowrap }
+html[data-device="phone"] #chatChapterChip{ flex:1 1 auto; min-width:0 }
+
+/* ---------- ② 省电 A：停掉背景层的无限循环动画 ---------- */
+html[data-device="phone"] .art,
+html[data-device="phone"] .art *,
+html[data-device="phone"] .art::before,
+html[data-device="phone"] .art::after{
+  animation:none !important; will-change:auto !important }
+/* 顶栏里那颗流转的光晕同样常驻，一并停掉 */
+html[data-device="phone"] .logo,
+html[data-device="phone"] .reddot{ animation:none !important }
+
+/* ---------- ③ 省电 B：收敛毛玻璃层（只留顶栏 / 弹窗 / 浮窗）----------
+   这也是本项目一贯的约定：子卡片与列表条目一律实色底、不开模糊。 */
+html[data-device="phone"] .card,
+html[data-device="phone"] .item,
+html[data-device="phone"] .book,
+html[data-device="phone"] .charcard,
+html[data-device="phone"] .chcard2,
+html[data-device="phone"] .subtab,
+html[data-device="phone"] .ltab,
+html[data-device="phone"] .tchip,
+html[data-device="phone"] .seg,
+html[data-device="phone"] .seg2,
+html[data-device="phone"] .tabs,
+html[data-device="phone"] .lrow,
+html[data-device="phone"] .ch,
+html[data-device="phone"] .chip,
+html[data-device="phone"] .composer,
+html[data-device="phone"] .subtabs::after,
+html[data-device="phone"] .ltabs::after{
+  backdrop-filter:none !important; -webkit-backdrop-filter:none !important }
+
+/* ---------- ④ 省电 C：按钮不需要毛玻璃 ----------
+   实测可见的 backdrop-filter 共 13 处，其中 10 处是 .btn 系列（xs/sm/primary/iconbtn）。
+   按钮本来就是实色/渐变底，模糊毫无收益却白占一层合成。 */
+html[data-device="phone"] .btn,
+html[data-device="phone"] .btn.sm,
+html[data-device="phone"] .btn.xs,
+html[data-device="phone"] .btn.primary,
+html[data-device="phone"] .btn.ghost,
+html[data-device="phone"] .iconbtn,
+html[data-device="phone"] .aifill,
+html[data-device="phone"] .dw-navclose{
+  backdrop-filter:none !important; -webkit-backdrop-filter:none !important }
 </style>
 <script>
 /* ============================================================================
@@ -12149,6 +12210,82 @@ $('#shelfSort').addEventListener('change',renderShelf);
     document.addEventListener('click',function(e){
       if(e.target&&e.target.closest&&e.target.closest('.subtab')) setTimeout(apply,80);
     },true);
+  }catch(e){}
+})();
+
+/* ==UI-POLISH-JS5== 手机 App 导出兜底（纯展示层，复用现有 openDlg / toast）
+   ---------------------------------------------------------------------------
+   问题：所有导出（作品TXT / 世界书 / 角色卡 / 整库备份 / 快照）都走 download()，
+         而它在内部用 <a download> + blob URL —— 安卓 WebView 不支持这套，
+         点了完全没反应，所以手机上「导出小说文本」「数据保险」都用不了。
+   做法：运行时包装 download()；检测到处于 App/WebView 时改为弹出「内容 + 一键复制」
+         面板（复制到剪贴板后粘到备忘录/微信/邮件即可保存）。
+         普通手机浏览器仍然走原生下载，行为不变。
+   --------------------------------------------------------------------------- */
+(function(){
+  try{
+    if(window.__dwDlReady) return; window.__dwDlReady=1;
+    var _dl=window.download;
+    if(typeof _dl!=='function') return;
+
+    function inApp(){
+      try{
+        if(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform()) return true;
+        if(window.capacitor&&window.capacitor.isNativePlatform) return true;
+        if(window.cordova||window.AndroidBridge) return true;
+        var u=navigator.userAgent||'';
+        if(/\bwv\b|; wv\)/.test(u)) return true;
+        var p=location.protocol||'';
+        if(p==='capacitor:'||p==='ionic:') return true;
+        if(location.hostname==='localhost'&&/^https?:$/.test(p)&&/Android|iPhone|iPad/i.test(u)) return true;
+      }catch(e){}
+      return false;
+    }
+    function esc2(s){
+      return String(s==null?'':s).replace(/[&<>]/g,function(c){
+        return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; });
+    }
+    function copyText(t){
+      var done=false;
+      try{
+        var ta=document.createElement('textarea');
+        ta.value=t; ta.setAttribute('readonly','');
+        ta.style.cssText='position:fixed;left:-9999px;top:0';
+        document.body.appendChild(ta);
+        ta.select(); ta.setSelectionRange(0,t.length);
+        done=document.execCommand('copy');
+        document.body.removeChild(ta);
+      }catch(e){}
+      if(done){ try{ toast('已复制到剪贴板'); }catch(e){} return; }
+      try{
+        if(navigator.clipboard&&navigator.clipboard.writeText){
+          navigator.clipboard.writeText(t).then(function(){ toast('已复制到剪贴板'); },
+            function(){ toast('复制失败，请长按下方文字手动全选'); });
+          return;
+        }
+      }catch(e){}
+      try{ toast('复制失败，请长按下方文字手动全选'); }catch(e){}
+    }
+    function showExport(name,text){
+      var t=String(text==null?'':text);
+      var id='__dwExpTA';
+      var html='<h3>导出：'+esc2(name||'内容')+'</h3>'
+        +'<div class="hint" style="margin-top:0">手机 App 的内置浏览器不支持直接下载文件。'
+        +'内容已放在下面，点「复制全部」后粘贴到备忘录 / 微信 / 邮件 里保存即可。</div>'
+        +'<textarea id="'+id+'" readonly style="width:100%;height:36vh;font-size:12px;line-height:1.5;'
+        +'white-space:pre;overflow:auto;margin-top:8px">'+esc2(t)+'</textarea>'
+        +'<div class="hint">共 '+t.length+' 字符</div>';
+      try{
+        openDlg(html,[
+          {label:'关闭'},
+          {label:'复制全部',cls:'primary',fn:function(){ copyText(t); return false; }}
+        ]);
+      }catch(e){ try{ alert('导出失败：'+(e&&e.message||e)); }catch(_e){} }
+    }
+    window.download=function(name,text,mime){
+      if(!inApp()) return _dl.apply(this,arguments);
+      showExport(name,text);
+    };
   }catch(e){}
 })();
 </script>

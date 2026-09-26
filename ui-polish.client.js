@@ -116,3 +116,97 @@
     window.addEventListener('devicechange',function(){ setTimeout(sync,80); });
   }catch(e){}
 })();
+
+/* ==UI-POLISH-JS2== 运行时修补层
+   ---------------------------------------------------------------------------
+   ① 手机端不把「人物关系 / 从正文梳理角色」收进「更多 ⋯」——它们被 LAY_TB
+      的 keep:1 挤掉了（「+ 新建角色」先抢到 LAY_MAIN 的名额），用户以为功能坏了。
+   ② AI 调用加 90 秒超时兜底 —— chatRaw 里的 fetch 没有超时，接口地址在手机上
+      打不通时 Promise 永不 settle，表现就是「点了没反应」。
+   ③ 原本静默 return 的路径补成可见提示，任何失败都不再无声无息。
+   --------------------------------------------------------------------------- */
+(function(){
+  try{
+    var ROOT=document.documentElement;
+    function isPhone(){ return ROOT.getAttribute('data-device')==='phone'; }
+    function say(m){ try{ if(typeof toast==='function') toast(m); }catch(e){} }
+
+    /* ---------- ① 关键按钮不再被「更多 ⋯」收纳 ---------- */
+    var KEEP=['#btnCastBoard','#btnCastExtract'];
+    function unhideKey(){
+      if(!isPhone()) return;
+      var bar=document.querySelector('#tab-chars .toolbar'); if(!bar) return;
+      for(var i=0;i<KEEP.length;i++){
+        var b=bar.querySelector(KEEP[i]); if(b) b.classList.remove('lay-sec');
+      }
+      var more=bar.querySelector('.btn-more');
+      if(more) more.style.display = bar.querySelector('.lay-sec') ? '' : 'none';
+    }
+    var _layTier=window.layTierPass;
+    if(typeof _layTier==='function'){
+      window.layTierPass=function(){
+        var r=_layTier.apply(this,arguments); try{ unhideKey(); }catch(e){} return r;
+      };
+    }
+    try{ unhideKey(); }catch(e){}
+    setInterval(function(){ try{ unhideKey(); }catch(e){} }, 2000);
+
+    /* ---------- ② AI 调用超时兜底 ---------- */
+    var AI_TIMEOUT=90000;
+    var _chat=window.chat;
+    if(typeof _chat==='function'){
+      window.chat=function(){
+        var args=arguments, self=this;
+        return new Promise(function(resolve,reject){
+          var done=false;
+          var timer=setTimeout(function(){
+            if(done) return; done=true;
+            reject(new Error('接口 90 秒无响应。请到「API 设置 → 检测连接」看地址在手机上能不能通，'
+                            +'常见原因是地址填了 localhost / 被跨域拦截 / 手机网络不通。'));
+          }, AI_TIMEOUT);
+          Promise.resolve().then(function(){ return _chat.apply(self,args); })
+            .then(function(v){ if(done) return; done=true; clearTimeout(timer); resolve(v); },
+                  function(e){ if(done) return; done=true; clearTimeout(timer); reject(e); });
+        });
+      };
+    }
+
+    /* ---------- ③ 静默 return → 可见提示 ---------- */
+    var _cai=window.chAiField;
+    if(typeof _cai==='function'){
+      window.chAiField=function(i,mod,k,mode){
+        if(!mod||!k){ say('这个 AI 按钮缺少字段信息，已跳过（mod='+mod+' k='+k+'）'); return; }
+        var c=null; try{ c=state.chars[i]; }catch(e){}
+        if(!c){ say('找不到第 '+((i|0)+1)+' 个角色，无法执行'); return; }
+        return _cai.apply(this,arguments);
+      };
+    }
+    var _aif=window.aiFill;
+    if(typeof _aif==='function'){
+      window.aiFill=function(f){
+        if(!f||!f.sel){ say('AI 按钮配置异常（缺少目标选择器）'); return; }
+        if(!document.querySelector(f.sel)){ say('找不到目标输入框 '+f.sel+'，无法写入'); return; }
+        return _aif.apply(this,arguments);
+      };
+    }
+    var _lfc=window.loreFillCat;
+    if(typeof _lfc==='function'){
+      window.loreFillCat=function(catId){
+        if(!catId){ say('这个「整类补全」按钮缺少分类信息，已跳过'); return; }
+        return _lfc.apply(this,arguments);
+      };
+    }
+
+    /* ---------- ④ 「从正文梳理」没正式章节时先讲清原因 ---------- */
+    var _ced=window.castExtractDialog;
+    if(typeof _ced==='function'){
+      window.castExtractDialog=function(){
+        try{
+          var n=(typeof castSources==='function')?castSources({recent:0}).length:-1;
+          if(n===0) say('还没有「已编入目录」的正式章节。先去「执笔成章 → 章节工坊」写一章，写好点章节上的「编入目录」，再回来梳理。');
+        }catch(e){}
+        return _ced.apply(this,arguments);
+      };
+    }
+  }catch(e){}
+})();

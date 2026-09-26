@@ -1913,6 +1913,97 @@ html[data-device="phone"] .dw-navclose{ display:grid }
 
 /* ⑤ 抽屉打开时锁住背景滚动 */
 html.dw-navon,html.dw-navon body{ overflow:hidden }
+
+/* ==========================================================================
+   ★ 手机端「一屏应用壳」—— 外层不动，只有内部内容区滚动
+   --------------------------------------------------------------------------
+   实测问题：编辑器页整页滚动严重（世界树溢出 1999px / 创世设定 413px）。
+   做法：把 html/body 锁死为视口高度并禁止整页滚动，两个屏幕改成
+         「撑满视口的弹性列」：顶栏固定 → 中间 flex:1 → 只有面板内部滚。
+        高度用 --vh（JS 写入的 innerHeight*0.01），规避地址栏收放导致的
+         100vh 跳动；--vh 缺失时回退到 1vh。
+   ⚠ 纯 CSS 覆盖层，不改任何 DOM / id / data-* / 业务逻辑。
+   ========================================================================== */
+
+/* ---------- ① 外层：锁死视口，禁止整页滚动与橡皮筋 ---------- */
+html[data-device="phone"]{
+  height:100%; overflow:hidden; overscroll-behavior:none; }
+html[data-device="phone"] body{
+  height:100%; max-height:100%; overflow:hidden;
+  overscroll-behavior:none; -webkit-overflow-scrolling:auto; }
+
+/* ---------- ② 两个屏幕都变成「撑满视口的弹性列」 ---------- */
+html[data-device="phone"] #shelfScreen,
+html[data-device="phone"] #editorScreen{
+  display:flex; flex-direction:column;
+  height:calc(var(--vh,1vh) * 100);
+  min-height:0; max-height:calc(var(--vh,1vh) * 100);
+  padding:0 12px; overflow:hidden; box-sizing:border-box; }
+
+/* ---------- ③ 顶栏固定不滚，间距收紧 ---------- */
+html[data-device="phone"] .stickytop{
+  flex:0 0 auto; position:relative; top:auto;
+  margin:0 -12px 8px; padding:calc(6px + env(safe-area-inset-top,0px)) 12px 6px; }
+html[data-device="phone"] .topbar{gap:10px}
+
+/* ---------- ④ 书架：卡片网格内部滚动 ---------- */
+html[data-device="phone"] #bookGrid{
+  flex:1 1 auto; min-height:0; overflow-y:auto; overflow-x:hidden;
+  -webkit-overflow-scrolling:touch; overscroll-behavior:contain;
+  padding-bottom:calc(8px + env(safe-area-inset-bottom,0px)); }
+
+/* ---------- ⑤ 编辑器：工作区占满剩余高度，只有面板内部滚 ---------- */
+html[data-device="phone"] .workspace{
+  flex:1 1 auto; min-height:0;
+  display:flex; flex-direction:column; overflow:hidden; }
+html[data-device="phone"] .panels{
+  flex:1 1 auto; min-height:0;
+  display:flex; flex-direction:column; overflow:hidden; }
+html[data-device="phone"] .panel.active{
+  flex:1 1 auto; min-height:0;
+  overflow-y:auto; overflow-x:hidden;
+  -webkit-overflow-scrolling:touch; overscroll-behavior:contain;
+  padding-bottom:calc(10px + env(safe-area-inset-bottom,0px)); }
+
+/* ---------- ⑥ 精简垂直占用：砍冗余间距与大块空白 ----------
+   注意：ui-theme.css 里有 html[data-device="phone"]:not([data-density="compact"])
+   这类 (0,3,1) 的高特异性规则，这里必须用同等特异性 + 靠后注入才能覆盖。 */
+html[data-device="phone"]:not([data-density="compact"]) .card{ padding:12px }
+html[data-device="phone"][data-density="compact"] .card{ padding:11px }
+html[data-device="phone"] .card{
+  border-radius:var(--radius-sm); margin-bottom:9px !important }
+html[data-device="phone"] .panel .card:last-child{ margin-bottom:0 !important }
+html[data-device="phone"] .card h3{ margin:0 0 6px; font-size:15px; line-height:1.35 }
+html[data-device="phone"] .grid,
+html[data-device="phone"] .row,
+html[data-device="phone"] .row3{ gap:8px }
+html[data-device="phone"]:not([data-density="compact"]) .work{ gap:10px }
+html[data-device="phone"] label{ margin-top:7px; margin-bottom:4px }
+html[data-device="phone"] .hint{ line-height:1.5; margin-top:6px }
+html[data-device="phone"] .toolbar{ gap:7px; margin-top:7px }
+html[data-device="phone"] .subtabs,
+html[data-device="phone"] .ltabs{ margin-bottom:9px; padding:1px 0 2px }
+html[data-device="phone"] .subtab,
+html[data-device="phone"] .ltab{ padding:9px 14px }
+html[data-device="phone"] .lbody,
+html[data-device="phone"] .lgbody{ padding:9px }
+html[data-device="phone"] .lgroup{ margin-bottom:8px }
+html[data-device="phone"] .item{ padding:10px 12px; margin-bottom:7px }
+html[data-device="phone"] input,
+html[data-device="phone"] select,
+html[data-device="phone"] textarea{ font-size:16px }   /* 16px 规避 iOS 聚焦缩放 */
+html[data-device="phone"] textarea{ min-height:66px }
+
+/* ---------- ⑦ 触控尺寸补足（需求⑥：≥44px）----------
+   .aifill 视觉保持紧凑（省垂直空间），但把命中区撑到 52px —— 这是 Apple HIG
+   推荐做法：视觉小、命中大。其余三个直接给足 44px。 */
+html[data-touch="1"] .aifill,html[data-device="phone"] .aifill{
+  min-height:38px; padding:8px 12px }
+html[data-device="phone"] #editorScreen .logo.dw-burger{
+  width:44px; height:44px; border-radius:15px; font-size:18px }
+html[data-device="phone"] .dw-navclose{
+  width:44px; height:44px; flex:0 0 44px; font-size:15px }
+html[data-device="phone"] .sidenav-h{ padding-bottom:10px }
 </style>
 <script>
 /* ============================================================================
@@ -11693,6 +11784,100 @@ $('#shelfSort').addEventListener('change',renderShelf);
     if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',sync);
     else sync();
     window.addEventListener('devicechange',function(){ setTimeout(sync,80); });
+  }catch(e){}
+})();
+
+/* ==UI-POLISH-JS2== 运行时修补层
+   ---------------------------------------------------------------------------
+   ① 手机端不把「人物关系 / 从正文梳理角色」收进「更多 ⋯」——它们被 LAY_TB
+      的 keep:1 挤掉了（「+ 新建角色」先抢到 LAY_MAIN 的名额），用户以为功能坏了。
+   ② AI 调用加 90 秒超时兜底 —— chatRaw 里的 fetch 没有超时，接口地址在手机上
+      打不通时 Promise 永不 settle，表现就是「点了没反应」。
+   ③ 原本静默 return 的路径补成可见提示，任何失败都不再无声无息。
+   --------------------------------------------------------------------------- */
+(function(){
+  try{
+    var ROOT=document.documentElement;
+    function isPhone(){ return ROOT.getAttribute('data-device')==='phone'; }
+    function say(m){ try{ if(typeof toast==='function') toast(m); }catch(e){} }
+
+    /* ---------- ① 关键按钮不再被「更多 ⋯」收纳 ---------- */
+    var KEEP=['#btnCastBoard','#btnCastExtract'];
+    function unhideKey(){
+      if(!isPhone()) return;
+      var bar=document.querySelector('#tab-chars .toolbar'); if(!bar) return;
+      for(var i=0;i<KEEP.length;i++){
+        var b=bar.querySelector(KEEP[i]); if(b) b.classList.remove('lay-sec');
+      }
+      var more=bar.querySelector('.btn-more');
+      if(more) more.style.display = bar.querySelector('.lay-sec') ? '' : 'none';
+    }
+    var _layTier=window.layTierPass;
+    if(typeof _layTier==='function'){
+      window.layTierPass=function(){
+        var r=_layTier.apply(this,arguments); try{ unhideKey(); }catch(e){} return r;
+      };
+    }
+    try{ unhideKey(); }catch(e){}
+    setInterval(function(){ try{ unhideKey(); }catch(e){} }, 2000);
+
+    /* ---------- ② AI 调用超时兜底 ---------- */
+    var AI_TIMEOUT=90000;
+    var _chat=window.chat;
+    if(typeof _chat==='function'){
+      window.chat=function(){
+        var args=arguments, self=this;
+        return new Promise(function(resolve,reject){
+          var done=false;
+          var timer=setTimeout(function(){
+            if(done) return; done=true;
+            reject(new Error('接口 90 秒无响应。请到「API 设置 → 检测连接」看地址在手机上能不能通，'
+                            +'常见原因是地址填了 localhost / 被跨域拦截 / 手机网络不通。'));
+          }, AI_TIMEOUT);
+          Promise.resolve().then(function(){ return _chat.apply(self,args); })
+            .then(function(v){ if(done) return; done=true; clearTimeout(timer); resolve(v); },
+                  function(e){ if(done) return; done=true; clearTimeout(timer); reject(e); });
+        });
+      };
+    }
+
+    /* ---------- ③ 静默 return → 可见提示 ---------- */
+    var _cai=window.chAiField;
+    if(typeof _cai==='function'){
+      window.chAiField=function(i,mod,k,mode){
+        if(!mod||!k){ say('这个 AI 按钮缺少字段信息，已跳过（mod='+mod+' k='+k+'）'); return; }
+        var c=null; try{ c=state.chars[i]; }catch(e){}
+        if(!c){ say('找不到第 '+((i|0)+1)+' 个角色，无法执行'); return; }
+        return _cai.apply(this,arguments);
+      };
+    }
+    var _aif=window.aiFill;
+    if(typeof _aif==='function'){
+      window.aiFill=function(f){
+        if(!f||!f.sel){ say('AI 按钮配置异常（缺少目标选择器）'); return; }
+        if(!document.querySelector(f.sel)){ say('找不到目标输入框 '+f.sel+'，无法写入'); return; }
+        return _aif.apply(this,arguments);
+      };
+    }
+    var _lfc=window.loreFillCat;
+    if(typeof _lfc==='function'){
+      window.loreFillCat=function(catId){
+        if(!catId){ say('这个「整类补全」按钮缺少分类信息，已跳过'); return; }
+        return _lfc.apply(this,arguments);
+      };
+    }
+
+    /* ---------- ④ 「从正文梳理」没正式章节时先讲清原因 ---------- */
+    var _ced=window.castExtractDialog;
+    if(typeof _ced==='function'){
+      window.castExtractDialog=function(){
+        try{
+          var n=(typeof castSources==='function')?castSources({recent:0}).length:-1;
+          if(n===0) say('还没有「已编入目录」的正式章节。先去「执笔成章 → 章节工坊」写一章，写好点章节上的「编入目录」，再回来梳理。');
+        }catch(e){}
+        return _ced.apply(this,arguments);
+      };
+    }
   }catch(e){}
 })();
 </script>

@@ -136,3 +136,94 @@ html[data-device="phone"] .dw-navclose{ display:grid }
 
 /* ⑤ 抽屉打开时锁住背景滚动 */
 html.dw-navon,html.dw-navon body{ overflow:hidden }
+
+/* ==========================================================================
+   ★ 手机端「一屏应用壳」—— 外层不动，只有内部内容区滚动
+   --------------------------------------------------------------------------
+   实测问题：编辑器页整页滚动严重（世界树溢出 1999px / 创世设定 413px）。
+   做法：把 html/body 锁死为视口高度并禁止整页滚动，两个屏幕改成
+         「撑满视口的弹性列」：顶栏固定 → 中间 flex:1 → 只有面板内部滚。
+        高度用 --vh（JS 写入的 innerHeight*0.01），规避地址栏收放导致的
+         100vh 跳动；--vh 缺失时回退到 1vh。
+   ⚠ 纯 CSS 覆盖层，不改任何 DOM / id / data-* / 业务逻辑。
+   ========================================================================== */
+
+/* ---------- ① 外层：锁死视口，禁止整页滚动与橡皮筋 ---------- */
+html[data-device="phone"]{
+  height:100%; overflow:hidden; overscroll-behavior:none; }
+html[data-device="phone"] body{
+  height:100%; max-height:100%; overflow:hidden;
+  overscroll-behavior:none; -webkit-overflow-scrolling:auto; }
+
+/* ---------- ② 两个屏幕都变成「撑满视口的弹性列」 ---------- */
+html[data-device="phone"] #shelfScreen,
+html[data-device="phone"] #editorScreen{
+  display:flex; flex-direction:column;
+  height:calc(var(--vh,1vh) * 100);
+  min-height:0; max-height:calc(var(--vh,1vh) * 100);
+  padding:0 12px; overflow:hidden; box-sizing:border-box; }
+
+/* ---------- ③ 顶栏固定不滚，间距收紧 ---------- */
+html[data-device="phone"] .stickytop{
+  flex:0 0 auto; position:relative; top:auto;
+  margin:0 -12px 8px; padding:calc(6px + env(safe-area-inset-top,0px)) 12px 6px; }
+html[data-device="phone"] .topbar{gap:10px}
+
+/* ---------- ④ 书架：卡片网格内部滚动 ---------- */
+html[data-device="phone"] #bookGrid{
+  flex:1 1 auto; min-height:0; overflow-y:auto; overflow-x:hidden;
+  -webkit-overflow-scrolling:touch; overscroll-behavior:contain;
+  padding-bottom:calc(8px + env(safe-area-inset-bottom,0px)); }
+
+/* ---------- ⑤ 编辑器：工作区占满剩余高度，只有面板内部滚 ---------- */
+html[data-device="phone"] .workspace{
+  flex:1 1 auto; min-height:0;
+  display:flex; flex-direction:column; overflow:hidden; }
+html[data-device="phone"] .panels{
+  flex:1 1 auto; min-height:0;
+  display:flex; flex-direction:column; overflow:hidden; }
+html[data-device="phone"] .panel.active{
+  flex:1 1 auto; min-height:0;
+  overflow-y:auto; overflow-x:hidden;
+  -webkit-overflow-scrolling:touch; overscroll-behavior:contain;
+  padding-bottom:calc(10px + env(safe-area-inset-bottom,0px)); }
+
+/* ---------- ⑥ 精简垂直占用：砍冗余间距与大块空白 ----------
+   注意：ui-theme.css 里有 html[data-device="phone"]:not([data-density="compact"])
+   这类 (0,3,1) 的高特异性规则，这里必须用同等特异性 + 靠后注入才能覆盖。 */
+html[data-device="phone"]:not([data-density="compact"]) .card{ padding:12px }
+html[data-device="phone"][data-density="compact"] .card{ padding:11px }
+html[data-device="phone"] .card{
+  border-radius:var(--radius-sm); margin-bottom:9px !important }
+html[data-device="phone"] .panel .card:last-child{ margin-bottom:0 !important }
+html[data-device="phone"] .card h3{ margin:0 0 6px; font-size:15px; line-height:1.35 }
+html[data-device="phone"] .grid,
+html[data-device="phone"] .row,
+html[data-device="phone"] .row3{ gap:8px }
+html[data-device="phone"]:not([data-density="compact"]) .work{ gap:10px }
+html[data-device="phone"] label{ margin-top:7px; margin-bottom:4px }
+html[data-device="phone"] .hint{ line-height:1.5; margin-top:6px }
+html[data-device="phone"] .toolbar{ gap:7px; margin-top:7px }
+html[data-device="phone"] .subtabs,
+html[data-device="phone"] .ltabs{ margin-bottom:9px; padding:1px 0 2px }
+html[data-device="phone"] .subtab,
+html[data-device="phone"] .ltab{ padding:9px 14px }
+html[data-device="phone"] .lbody,
+html[data-device="phone"] .lgbody{ padding:9px }
+html[data-device="phone"] .lgroup{ margin-bottom:8px }
+html[data-device="phone"] .item{ padding:10px 12px; margin-bottom:7px }
+html[data-device="phone"] input,
+html[data-device="phone"] select,
+html[data-device="phone"] textarea{ font-size:16px }   /* 16px 规避 iOS 聚焦缩放 */
+html[data-device="phone"] textarea{ min-height:66px }
+
+/* ---------- ⑦ 触控尺寸补足（需求⑥：≥44px）----------
+   .aifill 视觉保持紧凑（省垂直空间），但把命中区撑到 52px —— 这是 Apple HIG
+   推荐做法：视觉小、命中大。其余三个直接给足 44px。 */
+html[data-touch="1"] .aifill,html[data-device="phone"] .aifill{
+  min-height:38px; padding:8px 12px }
+html[data-device="phone"] #editorScreen .logo.dw-burger{
+  width:44px; height:44px; border-radius:15px; font-size:18px }
+html[data-device="phone"] .dw-navclose{
+  width:44px; height:44px; flex:0 0 44px; font-size:15px }
+html[data-device="phone"] .sidenav-h{ padding-bottom:10px }

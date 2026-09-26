@@ -214,35 +214,26 @@
 /* ==UI-POLISH-JS4== 输入框「1 行起步 + 随内容自动变高」（纯展示行为）
    ---------------------------------------------------------------------------
    · 只按【真实输入内容】算高度 —— 刻意忽略 placeholder：那段提示文字很长，
-     在窄输入框里会换行，一上来就把空输入框撑到上限（实测 112px）。
-   · 空 → 固定 1 行；内容变多 → 长高；到上限 → 内部滚动。
+     在窄输入框里会换行，一上来就把空输入框撑到上限。
+   · 手机端同时把超长 placeholder 换短，保证 1 行读得全。
+   · 用「只绑定一次 + 低频重检」的写法：即使面板被业务代码重渲染，
+     也会重新套上，不会被覆盖回长 placeholder。
+   · 桌面端一律不接管（清掉脚本写过的内联高度，交回 CSS）。
    · 不读写任何业务 state / localStorage，不改任何业务函数。
    --------------------------------------------------------------------------- */
 (function(){
   try{
     if(window.__dwGrowReady) return; window.__dwGrowReady=1;
-    var ta=document.querySelector('#chatInput');
-    if(!ta) return;
     var MIN=38, MAX=112;
-
-    /* 手机端把超长 placeholder 换短，保证 1 行也读得全 */
-    try{
-      if(document.documentElement.getAttribute('data-device')==='phone'){
-        if(ta.__phFull===undefined) ta.__phFull=ta.getAttribute('placeholder')||'';
-        ta.setAttribute('placeholder','写下这一章要写的内容…');
-      }
-    }catch(e){}
-
     function isPhone(){ return document.documentElement.getAttribute('data-device')==='phone'; }
+    function taEl(){ return document.querySelector('#chatInput'); }
 
     function fit(){
+      var ta=taEl(); if(!ta) return;
       try{
-        /* 桌面端一律不动：清掉脚本写过的内联高度，交回 CSS 管 */
         if(!isPhone()){ ta.style.height=''; ta.style.overflowY=''; return; }
-        if(!(ta.value||'').length){          /* 空：固定 1 行，不受 placeholder 影响 */
-          ta.style.height=MIN+'px';
-          ta.style.overflowY='hidden';
-          return;
+        if(!(ta.value||'').length){          /* 空：固定 1 行，不看 placeholder */
+          ta.style.height=MIN+'px'; ta.style.overflowY='hidden'; return;
         }
         ta.style.height='auto';
         var need=ta.scrollHeight;
@@ -250,13 +241,34 @@
         ta.style.overflowY = need>MAX ? 'auto' : 'hidden';
       }catch(e){}
     }
-    window.addEventListener('devicechange',function(){ setTimeout(fit,80); });
-    ta.addEventListener('input',fit);
-    ta.addEventListener('change',fit);
+    var SHORT_PH='写下本章内容…';
+    function apply(){
+      var ta=taEl(); if(!ta) return;
+      /* ① placeholder 每次都要重套 —— 放在"只绑定一次"判断之外，
+            否则一旦被重渲染覆盖回去就再也补不上了 */
+      try{
+        if(ta.__phFull===undefined) ta.__phFull=ta.getAttribute('placeholder')||'';
+        if(isPhone() && ta.__phFull && ta.getAttribute('placeholder')!==SHORT_PH){
+          ta.setAttribute('placeholder',SHORT_PH);
+        }
+      }catch(e){}
+      /* ② 事件只绑一次 */
+      if(!ta.__dwGrowBound){
+        ta.__dwGrowBound=1;
+        try{
+          ta.addEventListener('input',fit);
+          ta.addEventListener('change',fit);
+          ta.addEventListener('focus',fit);
+        }catch(e){}
+      }
+      fit();
+    }
+    apply();
+    setInterval(apply, 1200);                /* 防重渲染覆盖 */
     window.addEventListener('resize',fit);
+    window.addEventListener('devicechange',function(){ setTimeout(apply,80); });
     document.addEventListener('click',function(e){
-      if(e.target&&e.target.closest&&e.target.closest('.subtab')) setTimeout(fit,60);
+      if(e.target&&e.target.closest&&e.target.closest('.subtab')) setTimeout(apply,80);
     },true);
-    fit();
   }catch(e){}
 })();

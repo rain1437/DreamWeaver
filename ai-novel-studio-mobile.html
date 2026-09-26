@@ -2049,56 +2049,56 @@ html[data-device="phone"] #bookGrid{ min-width:0; max-width:100%; box-sizing:bor
    ========================================================================== */
 
 /* ① 顶层面板：交出滚动权，变成弹性列 */
-html[data-device="phone"] #tab-write:has(#sub-chat:not([style*="none"])){
+html[data-device="phone"] #tab-write.panel.active:has(#sub-chat:not([style*="none"])){
   display:flex; flex-direction:column; min-height:0; overflow:hidden; }
-html[data-device="phone"] #tab-write:has(#sub-chat:not([style*="none"])) > .subtabs{
+html[data-device="phone"] #tab-write.panel.active:has(#sub-chat:not([style*="none"])) > .subtabs{
   flex:0 0 auto; margin-bottom:8px; }
 
 /* ② 中间层 .work：由 grid 改为一列弹性，撑满剩余高度 */
-html[data-device="phone"] #tab-write:has(#sub-chat:not([style*="none"])) > .work{
+html[data-device="phone"] #tab-write.panel.active:has(#sub-chat:not([style*="none"])) > .work{
   flex:1 1 auto; min-height:0; display:flex; flex-direction:column;
   align-items:stretch; gap:10px; overflow:hidden; }
 
 /* ③ 章节工坊那张卡：保持自然高度，不拉伸 */
-html[data-device="phone"] #tab-write:has(#sub-chat:not([style*="none"]))
+html[data-device="phone"] #tab-write.panel.active:has(#sub-chat:not([style*="none"]))
   > .work > .card:not(:has(#sub-chat)){ flex:0 0 auto; margin-bottom:0 !important; }
 
 /* ④ 含 #sub-chat 的那张卡：吃掉剩余高度，把滚动权交给内部 */
-html[data-device="phone"] #tab-write:has(#sub-chat:not([style*="none"]))
+html[data-device="phone"] #tab-write.panel.active:has(#sub-chat:not([style*="none"]))
   .card:has(#sub-chat){
   flex:1 1 auto; min-height:0; display:flex; flex-direction:column;
   overflow:hidden; margin-bottom:0 !important; }
 
 /* ⑤ #sub-chat 自身撑满并纵向弹性 */
-html[data-device="phone"] #tab-write:has(#sub-chat:not([style*="none"])) #sub-chat{
+html[data-device="phone"] #tab-write.panel.active:has(#sub-chat:not([style*="none"])) #sub-chat{
   flex:1 1 auto; min-height:0; display:flex; flex-direction:column; overflow:hidden; }
 
 /* ⑥ chat-head：固定高度，不压缩，不滚动（高级选项浮层同样不拉伸） */
-html[data-device="phone"] #tab-write:has(#sub-chat:not([style*="none"])) #sub-chat > .chat-head,
-html[data-device="phone"] #tab-write:has(#sub-chat:not([style*="none"])) #sub-chat > .popover{
+html[data-device="phone"] #tab-write.panel.active:has(#sub-chat:not([style*="none"])) #sub-chat > .chat-head,
+html[data-device="phone"] #tab-write.panel.active:has(#sub-chat:not([style*="none"])) #sub-chat > .popover{
   flex:0 0 auto; }
 
 /* ⑦ 聊天区：吃掉剩余高度，只有它内部滚动 */
-html[data-device="phone"] #tab-write:has(#sub-chat:not([style*="none"])) #sub-chat > #chatLog{
+html[data-device="phone"] #tab-write.panel.active:has(#sub-chat:not([style*="none"])) #sub-chat > #chatLog{
   flex:1 1 auto; min-height:0;
   height:auto; max-height:none;          /* 覆盖原来的 56vh 固定高度 */
   overflow-y:auto; overflow-x:hidden;
   -webkit-overflow-scrolling:touch; overscroll-behavior:contain; }
 
 /* ⑧ 输入区：与 chat-head / #chatLog 平级，固定在可视区底部 */
-html[data-device="phone"] #tab-write:has(#sub-chat:not([style*="none"])) #sub-chat > .composer{
+html[data-device="phone"] #tab-write.panel.active:has(#sub-chat:not([style*="none"])) #sub-chat > .composer{
   flex:0 0 auto;                        /* 绝不压缩、绝不被滚走 */
   margin-top:10px; }
 
 /* ⑧b 宽度约束：弹性项默认 min-width:auto，会拒绝收缩到内容最小宽度以下，
       导致 #sub-chat / .chat-head 被「顶宽」到 544px（在 390px 视口上溢出）。
       给整条链补 min-width:0，让内容按容器宽度正常换行而不是溢出。 */
-html[data-device="phone"] #tab-write:has(#sub-chat:not([style*="none"])) > .work,
-html[data-device="phone"] #tab-write:has(#sub-chat:not([style*="none"])) .card:has(#sub-chat),
-html[data-device="phone"] #tab-write:has(#sub-chat:not([style*="none"])) #sub-chat,
-html[data-device="phone"] #tab-write:has(#sub-chat:not([style*="none"])) #sub-chat > .chat-head,
-html[data-device="phone"] #tab-write:has(#sub-chat:not([style*="none"])) #sub-chat > #chatLog,
-html[data-device="phone"] #tab-write:has(#sub-chat:not([style*="none"])) #sub-chat > .composer{
+html[data-device="phone"] #tab-write.panel.active:has(#sub-chat:not([style*="none"])) > .work,
+html[data-device="phone"] #tab-write.panel.active:has(#sub-chat:not([style*="none"])) .card:has(#sub-chat),
+html[data-device="phone"] #tab-write.panel.active:has(#sub-chat:not([style*="none"])) #sub-chat,
+html[data-device="phone"] #tab-write.panel.active:has(#sub-chat:not([style*="none"])) #sub-chat > .chat-head,
+html[data-device="phone"] #tab-write.panel.active:has(#sub-chat:not([style*="none"])) #sub-chat > #chatLog,
+html[data-device="phone"] #tab-write.panel.active:has(#sub-chat:not([style*="none"])) #sub-chat > .composer{
   min-width:0; max-width:100%; box-sizing:border-box; }
 
 /* ⑨ 键盘避让：复用已有的 data-kb / --kb-h（由 visualViewport 驱动）
@@ -2107,7 +2107,7 @@ html[data-device="phone"] #tab-write:has(#sub-chat:not([style*="none"])) #sub-ch
 html[data-device="phone"][data-kb="1"] #editorScreen{
   height:calc(var(--vh,1vh) * 100 - var(--kb-h,0px));
   max-height:calc(var(--vh,1vh) * 100 - var(--kb-h,0px)); }
-html[data-device="phone"][data-kb="1"] #tab-write:has(#sub-chat:not([style*="none"])) #sub-chat > .composer{
+html[data-device="phone"][data-kb="1"] #tab-write.panel.active:has(#sub-chat:not([style*="none"])) #sub-chat > .composer{
   position:static; bottom:auto; }        /* 外壳已让位，不再需要原来的 sticky */
 
 /* 手机聊天面板布局修复 · 压缩间距
@@ -2177,7 +2177,7 @@ html[data-device="phone"] #sub-chat > .composer > .composer-foot{
 html[data-device="phone"] #ctxInfo{ display:none }
 /* 「帮我写梗概」收敛成图标按钮，把宽度让给输入框（title 仍保留说明） */
 html[data-device="phone"] #btnDraftGist{
-  font-size:0; width:44px; min-width:44px; flex:0 0 44px;
+  font-size:0 !important; width:44px; min-width:44px; flex:0 0 44px;
   padding:0; display:inline-flex; align-items:center; justify-content:center; }
 html[data-device="phone"] #btnDraftGist::before{ content:'\2726'; font-size:15px; line-height:1 }
 html[data-device="phone"] #sub-chat > .composer > .composer-foot #btnSend{
@@ -12093,35 +12093,26 @@ $('#shelfSort').addEventListener('change',renderShelf);
 /* ==UI-POLISH-JS4== 输入框「1 行起步 + 随内容自动变高」（纯展示行为）
    ---------------------------------------------------------------------------
    · 只按【真实输入内容】算高度 —— 刻意忽略 placeholder：那段提示文字很长，
-     在窄输入框里会换行，一上来就把空输入框撑到上限（实测 112px）。
-   · 空 → 固定 1 行；内容变多 → 长高；到上限 → 内部滚动。
+     在窄输入框里会换行，一上来就把空输入框撑到上限。
+   · 手机端同时把超长 placeholder 换短，保证 1 行读得全。
+   · 用「只绑定一次 + 低频重检」的写法：即使面板被业务代码重渲染，
+     也会重新套上，不会被覆盖回长 placeholder。
+   · 桌面端一律不接管（清掉脚本写过的内联高度，交回 CSS）。
    · 不读写任何业务 state / localStorage，不改任何业务函数。
    --------------------------------------------------------------------------- */
 (function(){
   try{
     if(window.__dwGrowReady) return; window.__dwGrowReady=1;
-    var ta=document.querySelector('#chatInput');
-    if(!ta) return;
     var MIN=38, MAX=112;
-
-    /* 手机端把超长 placeholder 换短，保证 1 行也读得全 */
-    try{
-      if(document.documentElement.getAttribute('data-device')==='phone'){
-        if(ta.__phFull===undefined) ta.__phFull=ta.getAttribute('placeholder')||'';
-        ta.setAttribute('placeholder','写下这一章要写的内容…');
-      }
-    }catch(e){}
-
     function isPhone(){ return document.documentElement.getAttribute('data-device')==='phone'; }
+    function taEl(){ return document.querySelector('#chatInput'); }
 
     function fit(){
+      var ta=taEl(); if(!ta) return;
       try{
-        /* 桌面端一律不动：清掉脚本写过的内联高度，交回 CSS 管 */
         if(!isPhone()){ ta.style.height=''; ta.style.overflowY=''; return; }
-        if(!(ta.value||'').length){          /* 空：固定 1 行，不受 placeholder 影响 */
-          ta.style.height=MIN+'px';
-          ta.style.overflowY='hidden';
-          return;
+        if(!(ta.value||'').length){          /* 空：固定 1 行，不看 placeholder */
+          ta.style.height=MIN+'px'; ta.style.overflowY='hidden'; return;
         }
         ta.style.height='auto';
         var need=ta.scrollHeight;
@@ -12129,14 +12120,35 @@ $('#shelfSort').addEventListener('change',renderShelf);
         ta.style.overflowY = need>MAX ? 'auto' : 'hidden';
       }catch(e){}
     }
-    window.addEventListener('devicechange',function(){ setTimeout(fit,80); });
-    ta.addEventListener('input',fit);
-    ta.addEventListener('change',fit);
+    var SHORT_PH='写下本章内容…';
+    function apply(){
+      var ta=taEl(); if(!ta) return;
+      /* ① placeholder 每次都要重套 —— 放在"只绑定一次"判断之外，
+            否则一旦被重渲染覆盖回去就再也补不上了 */
+      try{
+        if(ta.__phFull===undefined) ta.__phFull=ta.getAttribute('placeholder')||'';
+        if(isPhone() && ta.__phFull && ta.getAttribute('placeholder')!==SHORT_PH){
+          ta.setAttribute('placeholder',SHORT_PH);
+        }
+      }catch(e){}
+      /* ② 事件只绑一次 */
+      if(!ta.__dwGrowBound){
+        ta.__dwGrowBound=1;
+        try{
+          ta.addEventListener('input',fit);
+          ta.addEventListener('change',fit);
+          ta.addEventListener('focus',fit);
+        }catch(e){}
+      }
+      fit();
+    }
+    apply();
+    setInterval(apply, 1200);                /* 防重渲染覆盖 */
     window.addEventListener('resize',fit);
+    window.addEventListener('devicechange',function(){ setTimeout(apply,80); });
     document.addEventListener('click',function(e){
-      if(e.target&&e.target.closest&&e.target.closest('.subtab')) setTimeout(fit,60);
+      if(e.target&&e.target.closest&&e.target.closest('.subtab')) setTimeout(apply,80);
     },true);
-    fit();
   }catch(e){}
 })();
 </script>
